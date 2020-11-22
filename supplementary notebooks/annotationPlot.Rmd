@@ -1,0 +1,127 @@
+---
+title: "Annotation Database intersection plot"
+---
+
+```{r message=FALSE}
+# BiocManager::install("ComplexHeatmap")
+library(ComplexHeatmap)
+library(dplyr)
+library(magrittr)
+
+#df_annot <- read.csv("../data/annotation_df_05_18.csv"), stringsAsFactors = FALSE)
+df_annot <- read.csv(getPath_fromProjWd("data/annotation.20200701.csv"), stringsAsFactors = FALSE)
+
+out_dir <- "results/Annotation Plots/"
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r}
+colnames(df_annot)
+```
+
+```{r using-ggvenn}
+thres <- 1e-10
+alnLength <- 50
+
+list_db_genes <- list(
+                  Swiss_Prot = df_annot %>% dplyr::filter((swiss_prot_stat_sig < thres) &  (swiss_prot_len_perc > alnLength)) %>% dplyr::pull(gene_id),
+                  
+                  Fly = df_annot %>% dplyr::filter((fly_stat_sig < thres) & (fly_len_perc > alnLength)) %>% dplyr::pull(gene_id),
+                  
+                  Shrimp = df_annot %>% dplyr::filter((shrimp_stat_sig < thres) & (shrimp_len_perc > alnLength)) %>% dplyr::pull(gene_id)
+  )
+
+list_db_transcripts <- list(
+                  Swiss_prot = df_annot %>% dplyr::filter((swiss_prot_stat_sig < thres) &  (swiss_prot_len_perc > alnLength)) %>% dplyr::pull(transcript_id),
+                  
+                  Fly = df_annot %>% dplyr::filter((fly_stat_sig < thres) & (fly_len_perc > alnLength)) %>% dplyr::pull(transcript_id),
+                  
+                  Shrimp = df_annot %>% dplyr::filter((shrimp_stat_sig < thres) & (shrimp_len_perc > alnLength)) %>% dplyr::pull(transcript_id)
+  )
+
+library(purrr)
+library(ggplot2)
+library(RVenn)
+library(gridExtra)
+venn_object_genes = Venn(list_db_genes)
+venn_object_transcripts = Venn(list_db_transcripts)
+
+venn_dia_genes = ggvenn(venn_object_genes,fill=c("gray5","gray50","gray100"))+theme_void()+theme(legend.position = "none")
+venn_dia_transcripts = ggvenn(venn_object_transcripts,fill=c("gray5","gray50","gray100"))+theme_void()+theme(legend.position = "none")
+
+venn_both = grid.arrange(venn_dia_transcripts,venn_dia_genes,ncol=2)
+
+ggsave(plot = venn_both, filename = "annot_intersect.png" , path = out_dir, dpi=300,width=20)
+```
+
+
+
+
+
+
+
+
+```{r}
+getCombinations <- function(col, thres = Inf, alnLength = 0){
+  list_db <- list(swiss_prot = df_annot %>% dplyr::filter((swiss_prot_stat_sig < thres) & (swiss_prot_len_perc > alnLength)) %>% dplyr::pull(gene_id),
+                  
+                  fly = df_annot %>% dplyr::filter((fly_stat_sig < thres) & (fly_len_perc > alnLength)) %>% dplyr::pull(gene_id),
+                  
+                  shrimp = df_annot %>% dplyr::filter((shrimp_stat_sig < thres) & (shrimp_len_perc > alnLength)) %>% dplyr::pull(gene_id))
+  return(list_db)  
+}
+
+thres <- 1e-10
+alnLenThreshold <- 50
+
+m_genes <- make_comb_mat(getCombinations("gene_id", thres,alnLenThreshold), mode = "intersect")
+m_trans <- make_comb_mat(getCombinations("transcript_id", thres,alnLenThreshold), mode = "intersect")
+```
+
+
+```{r}
+plotIntersection <- function(m, topAnnot){
+  ss = set_size(m)
+  cs = comb_size(m)
+  top_annotation <- HeatmapAnnotation(
+          "topLabel" = anno_barplot(cs, 
+              ylim = c(0, max(cs)*1.1),
+              border = FALSE, 
+              gp = gpar(fill = "black"), 
+              height = unit(12, "cm")
+          ), 
+          annotation_name_side = "left", 
+          annotation_name_rot = 90)
+  top_annotation@anno_list$topLabel@label <- topAnnot
+  ht = UpSet(m, 
+      set_order = order(ss),
+      pt_size = unit(3, "mm"),
+      comb_order = order(comb_degree(m), -cs),
+      top_annotation = top_annotation,
+      left_annotation = rowAnnotation(
+          set_name = anno_text(set_name(m), 
+              location = 0.5, 
+              just = "center",
+              width = max_text_width(set_name(m)) + unit(4, "mm"))
+      ), 
+      right_annotation = NULL,
+      show_row_names = FALSE)
+  ht = draw(ht)
+  od = column_order(ht)
+  decorate_annotation("topLabel", {
+      grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+          default.units = "native", just = c("left", "bottom"), 
+          gp = gpar(fontsize = 12, col = "#707070"), rot = 45)
+  })
+}
+```
+
+```{r}
+options(scipen=6)
+#sigLabel <- if(thres != Inf) paste0("(",format(thres, scientific = TRUE),")") else ""
+sigLabel <- ""
+# The plot won't render properly on this code chunk
+# Run this lines in the console to display in the Plots panel on the lower right of RStudio, and click Zoom to view full screen
+plotIntersection(m_genes, paste("Gene ID Intersections", sigLabel))
+plotIntersection(m_trans, paste("Transcription ID Intersections", sigLabel))
+```

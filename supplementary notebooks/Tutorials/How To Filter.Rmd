@@ -1,0 +1,193 @@
+---
+title: "Filtering Documentation"
+output: html_notebook
+---
+
+```{r}
+loadDependencies()
+DIR_RSEM <- "data/counts_per_sample"
+dseq_orig <- importRSEM(DIR_RSEM)
+```
+
+
+# How to filter Samples
+```{r echo=TRUE}
+dseq <- filterSamples(dseq_orig, removeSamples = c("BAT_E_2", "CAG_C_3"))
+
+print_filterSummary(dseq)
+```
+
+
+# How to filter Genes
+Most of the time, we would be using external variables that would be used to filter genes.  
+These external data are loaded as a dataframe which can then be subsetted/filtered based on your specified criteria.  
+To use my custom functions, it is required that this dataframe should have the column `gene_id`.   
+
+## Case 1 : Use one dataframe for filtering
+#### Step 1 - Subset the dataframe
+```{r echo=TRUE}
+df_ex.orig <- read.csv(getPath_fromProjWd("data/RSEM.isoform.TMM.EXPR.matrix.E-inputs"), sep="\t")
+df_ex <- df_ex.orig %>% 
+          select(c(X.Ex, acc)) %>% 
+          subset(X.Ex <= 90)
+
+df_ex
+```
+#### Step 2 - Set gene_id column
+It can be seen that `acc` column stores the gene ids. Since my custom functions are not yet that flexible, we have to rename this to `gene_id` using a (hopefully) convenient way.
+```{r echo=TRUE}
+df_ex <- df_ex %>% setColumn_asGeneID("acc")   # renames "acc" column to "gene_id"
+head(df_ex)
+```
+
+#### Step 3 - Use dataframe to filter genes in DEseq
+```{r echo=TRUE}
+dseq <- filterGenes(dseq_orig, df_ex)
+
+print_filterSummary(dseq)
+```
+
+## Case 2 : Use multiple dataframes for filtering
+Sometimes we want to combine filters from different external dataframes.  
+For example, keep genes that 1) are at top 90% of expressions 2) and have significant Swiss Prot IDs
+
+#### Step 1 - Subset the dataframes
+```{r echo=TRUE}
+# Criteria 1 - top 90% of expressions
+df_ex <- df_ex.orig %>% select(c(X.Ex,acc)) %>% subset(X.Ex <= 90) %>% 
+          setColumn_asGeneID("acc")
+
+# Criteria 2 - significant Swiss Prot IDs
+# Note : Since the annotation filter is a special case, the code block below is just for demonstration. 
+#        Helper functions are available so you wont have to write this very long code block. (more on that later)
+df_swisspot.orig <- read.csv(getPath_fromProjWd("data/annotation_df_05_18.csv"))
+df_swisspot <- df_swisspot.orig %>% 
+                select(c(gene_id, swiss_prot, swiss_prot_stat_sig)) %>% 
+                subset(swiss_prot_stat_sig < 10e-10) %>% 
+                group_by(gene_id) %>% 
+                summarise(swiss_prot = dplyr::first(swiss_prot), 
+                          swiss_prot_stat_sig = dplyr::first(swiss_prot_stat_sig))
+
+df_ex
+df_swisspot
+```
+Since both dataframes already have `gene_id` columns, we can now use these dataframes in my custom functions.
+
+#### Step 2 - Combine dataframes for filtering 
+```{r echo=TRUE}
+df_ex_swiss <- getCombinedFilters(list(df_ex, df_swisspot), combineBy = "intersect")
+df_ex_swiss
+```
+
+#### Step 3 - Filter DEseq genes using combined dataframes
+```{r echo=TRUE}
+dseq <- filterGenes(dseq_orig, df_ex_swiss)
+
+print_filterSummary(dseq)
+```
+
+
+## Special Case : Using the Annotation CSV file
+The `annotation_df.csv` dataframe, when grouped by `gene_id`, would consist of columns of Uniprot IDs that are independent from each other. Example, when filtering for both significant `swiss_prot` and `fly` genes, the filtering is not simply
+```
+df_annot %>% filter(swiss_prot < 10e-10 & fly < 10e-10)
+```
+since it can happen that for a duplicated `gene_id`, both significances are not on the same row.  
+  
+A groupby can perhaps be done, but there are caveats:  
+1. Only the one swiss_prot & fly id is always retained  
+2. The summarised columns are dependent on other columns as demonstrated in the code block below
+```
+df_annot %>% group_by(gene_id) %>% 
+              summarise(swiss_prot = function(x) 
+                                      return swiss_prot that are sig. in swiss_prot_stat_sig & fly_stat_sig,
+                        swiss_prot_stat_sig = function(x) swiss_prot_stat_sig < 10e-10 & fly_stat_sig < 10e-10,
+                        fly = function(x) return fly that are sig. in swiss_prot_stat_sig & fly_stat_sig,
+                        fly_stat_sig = function(x) swiss_prot_stat_sig < 10e-10 & fly_stat_sig < 10e-10,)
+```
+
+My solution to this is to split the dataframes according to their column groups, as how you specify it in filter_annot_constants.R (a snippet is shown below). 
+```
+ANNOTATION_COLUMN_GROUPS <- list(
+  list(
+    dbName = "swiss_prot",
+    signif = "swiss_prot_stat_sig",
+    accuracy = "swiss_prot_acc"
+  ),
+  list(
+    dbName = "fly",
+    signif = "fly_stat_sig"
+  ),
+  ...
+)
+```
+This means that the function we will use later `subsetAnnotation()` (inside filter_annot.R), will split the annotation dataframe into two : 1) One contains the columns `gene_id`, `swiss_prot`, `swiss_prot_stat_sig`, `swiss_prot_acc` (ignore if not exist) 2) and the other contains the columns `gene_id`, `fly`, `fly_stat_sig`.  
+Each of these independent dataframes are then subsetted by the specified significance threshold. And then combined using `getCombinedFilters()` (similar steps as in Case 2 above).  
+
+
+#### Step 1 - Load the annotation file
+```{r echo=TRUE}
+loadAnnotationFile("data/annotation_df_05_18.csv", fromProjRoot = TRUE)
+```
+
+#### Step 2 - Get the dataframe subset based on specified criteria
+<b>By Intersect</b>
+```{r echo=TRUE}
+df_annot1 <- subsetAnnotation(dbNames = c("swiss_prot", "fly"), signif = 10e-10, combineBy = "intersect")
+df_annot1
+```
+
+<b>By Union</b>
+```{r echo=TRUE}
+df_annot2 <- subsetAnnotation(dbNames = c("swiss_prot", "fly"), signif = 10e-10, combineBy = "union")
+df_annot2
+```
+
+<b>Return all rows</b> for cases of duplicated gene ids.   
+<i>Default returns only the first row</i>
+```{r echo=TRUE}
+df_annot3 <- subsetAnnotation(dbNames = c("swiss_prot", "fly"), signif = 10e-10, combineBy = "intersect",
+                              getFirstGeneIdOnly = FALSE)
+df_annot3
+```
+
+Returning the subsetted dataframe allows for more filtering criteria to be performed.  
+When you are satisfied with your filtering dataframe, filter DEseq genes using this dataframe.
+
+#### Step 3 - Filter DESeq genes
+```{r echo=TRUE}
+dseq <- filterGenes(dseq_orig, df_annot1)
+
+print_filterSummary(dseq)
+```
+
+# Extra code - combining all our learnings at once
+```{r echo=TRUE}
+# Get only swiss_prot with HSP genes
+df_hsp <- subsetAnnotation(dbNames="swiss_prot", signif=10e-10) %>% 
+            filter(grepl("HSP", swiss_prot))
+
+dseq <- filterGenes(dseq_orig, df_hsp) %>% 
+        filterSamples(removeSamples = c("BAT_E_2", "BIC_C_3", "CAG_C_2"))
+
+
+print_filterSummary(dseq)
+```
+
+# List of custom functions used
+<i> Docstring to be provided soon </i>  
+* `getPath_fromProjWd(path)` - If project directory is in C:/dge-anal, then this returns C:/dge-anal/path  
+* `filterSamples(DESeq, removeSamples)` - removes samples in the DESeq object  
+* `filterGenes(DESeq, df_filter)` - keep all DESeq genes in the `gene_id` column of df_filter  
+* `setColumn_asGeneID(df_filter, columnName)` - renames columnName to `gene_id`   
+* `print_filterSummary(DESeq)` - prints the count summary of genes, samples, and samples group of the DESeq object.   
+When using Annotation File:  
+* `loadAnnotationFile(path, fromProjRoot=TRUE)` - Call this first to let filter_annot know where the annotation csv file is. If fromProjRoot is TRUE, the provided path will be prepended by the project root directory.  
+* `subsetAnnotation(dbNames, signif, combineBy, getFirstGeneIdOnly=TRUE)` - Returns a subsetted dataframe based on given criteria. Run `docstring(subsetAnnotation)` for more info on the parameters.  
+
+```{r echo=TRUE}
+docstring(subsetAnnotation)
+```
+
+
+

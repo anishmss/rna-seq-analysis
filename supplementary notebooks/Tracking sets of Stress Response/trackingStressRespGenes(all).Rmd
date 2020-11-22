@@ -1,0 +1,577 @@
+---
+title: "Tracking Stress Response genes in annotation filter"
+output:
+  html_document:
+    df_print: paged
+---
+```{r, echo=FALSE, results='hide'}
+# loadDependencies()
+# import("supplementary notebooks/trackingStressRespGenes.R")
+# 
+# dseq_orig <- importRSEM()
+```
+<hr>
+# Problem 1: Where did the Descendant genes went?  
+<i>
+Gene Filter : Annotation from Five databases with Significance 10e-10  
+Sample Filter : No BAT_E_2, CAG_C_3, CAG_E_1, BIC_C_3
+</i>
+
+   
+Coefficients :
+
+Intercept, BAT, BIC, E, BAT.E, BIC.E,   
+<p style="text-align:center;"><b>Initial Count</b></p>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:7px 15px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:7px 15px;word-break:normal;}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-73oq">Total number of genes</th>
+    <th class="tg-73oq">6374</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">After filtering, the number of descendant genes is</td>
+    <td class="tg-73oq"><span style="font-weight:bold;color:#2B86FF">1159 Desc</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">After fitting, the number of outliers is</td>
+    <td class="tg-73oq"><span style="color:#FF3838">4 Decs</span> out of 24</td>
+  </tr>
+</tbody>
+</table>
+ 
+  
+<p style="text-align:center;"><b>Differential Analysis Results</b></p>
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:10px 5px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-65px{background-color:#ecf4ff;border-color:#000000;text-align:left;vertical-align:top}
+.tg .tg-7btt{border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-0pky"></th>
+    <th class="tg-7btt">BAT.E</th> 
+    <th class="tg-7btt">BIC.E</th> 
+    <th class="tg-7btt">BAT.E - BIC.E</th> 
+    <th class="tg-7btt">E</th> 
+    <th class="tg-7btt">E+BAT.E</th> 
+    <th class="tg-7btt">E+BIC.E</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">Removed by Ind. Filtering</td>
+    <td class="tg-73oq"><span style="color:#FF3838">600 Desc</span><br><span style="font-style:italic">out of 2952</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">0 Desc</span><br><span style="font-style:italic">out of 0</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">583 Desc</span><br><span style="font-style:italic">out of 2833</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">724 Desc</span><br><span style="font-style:italic">out of 3660</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">501 Desc</span><br><span style="font-style:italic">out of 2370</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">435 Desc</span><br><span style="font-style:italic">out of 2018</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">Final descendants for testing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td class="tg-73oq">555 Desc</td> 
+    <td class="tg-73oq">1155 Desc</td> 
+    <td class="tg-73oq">572 Desc</td> 
+    <td class="tg-73oq">431 Desc</td> 
+    <td class="tg-73oq">654 Desc</td> 
+    <td class="tg-73oq">720 Desc</td>
+  </tr>
+  <tr>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">Signif. DE genes</span></td>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">36 Desc</span><br><span style="font-style:italic">out of 282</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">14 Desc</span><br><span style="font-style:italic">out of 71</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">21 Desc</span><br><span style="font-style:italic">out of 109</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">14 Desc</span><br><span style="font-style:italic">out of 118</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">85 Desc</span><br><span style="font-style:italic">out of 566</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">24 Desc</span><br><span style="font-style:italic">out of 134</span></td>
+  </tr>
+  <tr>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">Overrepresented Test</span></td>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9921</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.303</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.3293</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9582</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9783</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.4787</span></td>
+  </tr>
+</tbody>
+</table>
+      
+```{r, results='asis', echo=FALSE, message=FALSE}
+filtered <- filterData(dseq_orig,
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10,
+                          dbNames = c("swiss_prot", "ortho_db", "fly", "shrimp", "pfam")),
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"))
+trackDescGenes(filtered)
+```
+
+```{r, echo=FALSE}
+# Problem 2 : How many Ex90 genes are descendants?
+# Total number of genes in EX90 : 17162
+# Number of descendant genes : 323
+
+# df_ex90 <- getDf_Ex90(CUTOFF = 90) %>% rename(acc = "gene_id")
+# df_ex90_descendants <- getDescendantGenes(geneids = df_ex90$gene_id)
+# 
+# writeLines(paste0("Total number of genes in EX90 : ",nrow(df_ex90)))
+# writeLines(paste0("Number of descendant genes : ", nrow(df_ex90_descendants)))
+```
+
+<hr>
+# Problem 3 : DEG with all genes that have Swiss-prot annotation. 10^-10 and 10^-5 filters
+<h3>Significance : <b>10e^-5</b></h3>
+Coefficients :
+
+Intercept, BAT, BIC, E, BAT.E, BIC.E, 
+<br>
+<p style="text-align:center;"><b>Initial Count</b></p>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:7px 15px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:7px 15px;word-break:normal;}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-73oq">Total number of genes</th>
+    <th class="tg-73oq">81278</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">After filtering, the number of descendant genes is</td>
+    <td class="tg-73oq"><span style="font-weight:bold;color:#2B86FF">13415 Desc</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">After fitting, the number of outliers is</td>
+    <td class="tg-73oq"><span style="color:#FF3838">48 Desc</span> out of 361</td>
+  </tr>
+</tbody>
+</table>
+ <br>
+ <p style="text-align:center;"><b>Differential Analysis Results</b></p>
+ <style type="text/css">
+  .tg  {border:none;border-collapse:collapse;border-spacing:0;}
+  .tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+    padding:10px 5px;word-break:normal;}
+  .tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+    overflow:hidden;padding:10px 5px;word-break:normal;}
+  .tg .tg-65px{background-color:#ecf4ff;border-color:#000000;text-align:left;vertical-align:top}
+  .tg .tg-7btt{border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+  .tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+  .tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+  </style>
+  <table class="tg">
+  <thead>
+    <tr>
+      <th class="tg-0pky"></th>
+      <th class="tg-7btt">BAT.E</th> 
+      <th class="tg-7btt">BIC.E</th> 
+      <th class="tg-7btt">BAT.E - BIC.E</th> 
+      <th class="tg-7btt">E</th> 
+      <th class="tg-7btt">E+BAT.E</th> 
+      <th class="tg-7btt">E+BIC.E</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="tg-73oq">Removed by Ind. Filtering</td>
+      <td class="tg-73oq"><span style="color:#FF3838">10495 Desc</span><br><span style="font-style:italic">out of 61168</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">9402 Desc</span><br><span style="font-style:italic">out of 54263</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">9857 Desc</span><br><span style="font-style:italic">out of 57016</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">9857 Desc</span><br><span style="font-style:italic">out of 57016</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">10277 Desc</span><br><span style="font-style:italic">out of 59768</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">9633 Desc</span><br><span style="font-style:italic">out of 55643</span></td>
+    </tr>
+    <tr>
+      <td class="tg-73oq">Final descendants for testing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+      <td class="tg-73oq">2872 Desc</td> 
+      <td class="tg-73oq">3965 Desc</td> 
+      <td class="tg-73oq">3510 Desc</td> 
+      <td class="tg-73oq">3510 Desc</td> 
+      <td class="tg-73oq">3090 Desc</td> 
+      <td class="tg-73oq">3734 Desc</td>
+    </tr>
+    <tr>
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">Signif. DE genes</span></td>
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">117 Desc</span><br><span style="font-style:italic">out of 846</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">36 Desc</span><br><span style="font-style:italic">out of 288</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">62 Desc</span><br><span style="font-style:italic">out of 375</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">52 Desc</span><br><span style="font-style:italic">out of 424</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">258 Desc</span><br><span style="font-style:italic">out of 1726</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">77 Desc</span><br><span style="font-style:italic">out of 508</span></td>
+    </tr>
+    <tr>
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">Overrepresented Test</span></td>
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.982</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9638</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.4603</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.991</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9594</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.7749</span></td>
+    </tr>
+  </tbody>
+  </table>
+```{r, echo=FALSE, results='asis', message=FALSE}
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-05, 
+                          dbNames = c("swiss_prot")))
+trackDescGenes(filtered)
+```
+<hr>
+<h3>Significance : <b>10e^-10</b></h3>
+Coefficients :
+
+Intercept, BAT, BIC, E, BAT.E, BIC.E,   
+<p style="text-align:center;"><b>Initial Count</b></p>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:7px 15px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:7px 15px;word-break:normal;}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-73oq">Total number of genes</th>
+    <th class="tg-73oq">59504</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">After filtering, the number of descendant genes is</td>
+    <td class="tg-73oq"><span style="font-weight:bold;color:#2B86FF">10904 Desc</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">After fitting, the number of outliers is</td>
+    <td class="tg-73oq"><span style="color:#FF3838">41 Desc</span> out of 316</td>
+  </tr>
+</tbody>
+</table>
+ 
+
+<p style="text-align:center;"><b>Differential Analysis Results</b></p>
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:10px 5px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-65px{background-color:#ecf4ff;border-color:#000000;text-align:left;vertical-align:top}
+.tg .tg-7btt{border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-0pky"></th>
+    <th class="tg-7btt">BAT.E</th> 
+    <th class="tg-7btt">BIC.E</th> 
+    <th class="tg-7btt">BAT.E - BIC.E</th> 
+    <th class="tg-7btt">E</th> 
+    <th class="tg-7btt">E+BAT.E</th> 
+    <th class="tg-7btt">E+BIC.E</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">Removed by Ind. Filtering</td>
+    <td class="tg-73oq"><span style="color:#FF3838">0 Desc</span><br><span style="font-style:italic">out of 0</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">7436 Desc</span><br><span style="font-style:italic">out of 38473</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">8010 Desc</span><br><span style="font-style:italic">out of 41447</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">8010 Desc</span><br><span style="font-style:italic">out of 41447</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">7832 Desc</span><br><span style="font-style:italic">out of 40472</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">7635 Desc</span><br><span style="font-style:italic">out of 39483</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">Final descendants for testing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td class="tg-73oq">10863 Desc</td> 
+    <td class="tg-73oq">3427 Desc</td> 
+    <td class="tg-73oq">2853 Desc</td> 
+    <td class="tg-73oq">2853 Desc</td> 
+    <td class="tg-73oq">3031 Desc</td> 
+    <td class="tg-73oq">3228 Desc</td>
+  </tr>
+  <tr>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">Signif. DE genes</span></td>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">91 Desc</span><br><span style="font-style:italic">out of 555</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">25 Desc</span><br><span style="font-style:italic">out of 159</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">39 Desc</span><br><span style="font-style:italic">out of 216</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">37 Desc</span><br><span style="font-style:italic">out of 249</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">186 Desc</span><br><span style="font-style:italic">out of 1222</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">52 Desc</span><br><span style="font-style:italic">out of 308</span></td>
+  </tr>
+  <tr>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">Overrepresented Test</span></td>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.8704</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.7694</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.4983</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9114</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9978</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.7162</span></td>
+  </tr>
+</tbody>
+</table>
+```{r, echo=FALSE, results='asis', message=FALSE}
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10, 
+                          dbNames = c("swiss_prot")))
+trackDescGenes(filtered)
+```
+
+<hr>
+# Problem 4 : DEG with all genes that have Fly annotation. 10^-10 and 10^-5 filters
+<h3>Significance : <b>10e^-5</b></h3>
+Coefficients :
+
+Intercept, BAT, BIC, E, BAT.E, BIC.E, 
+<br>
+<p style="text-align:center;"><b>Initial Count</b></p>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:7px 15px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:7px 15px;word-break:normal;}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-73oq">Total number of genes</th>
+    <th class="tg-73oq">17690</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">After filtering, the number of descendant genes is</td>
+    <td class="tg-73oq"><span style="font-weight:bold;color:#2B86FF">3132 Desc</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">After fitting, the number of outliers is</td>
+    <td class="tg-73oq"><span style="color:#FF3838">8 Desc</span> out of 69</td>
+  </tr>
+</tbody>
+</table>
+ 
+
+ <br>
+ <p style="text-align:center;"><b>Differential Analysis Results</b></p>
+ <style type="text/css">
+  .tg  {border:none;border-collapse:collapse;border-spacing:0;}
+  .tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+    padding:10px 5px;word-break:normal;}
+  .tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+    overflow:hidden;padding:10px 5px;word-break:normal;}
+  .tg .tg-65px{background-color:#ecf4ff;border-color:#000000;text-align:left;vertical-align:top}
+  .tg .tg-7btt{border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+  .tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+  .tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+  </style>
+  <table class="tg">
+  <thead>
+    <tr>
+      <th class="tg-0pky"></th>
+      <th class="tg-7btt">BAT.E</th> 
+      <th class="tg-7btt">BIC.E</th> 
+      <th class="tg-7btt">BAT.E - BIC.E</th> 
+      <th class="tg-7btt">E</th> 
+      <th class="tg-7btt">E+BAT.E</th> 
+      <th class="tg-7btt">E+BIC.E</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="tg-73oq">Removed by Ind. Filtering</td>
+      <td class="tg-73oq"><span style="color:#FF3838">2037 Desc</span><br><span style="font-style:italic">out of 10582</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">1623 Desc</span><br><span style="font-style:italic">out of 8374</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">2199 Desc</span><br><span style="font-style:italic">out of 11536</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">1872 Desc</span><br><span style="font-style:italic">out of 9633</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">1872 Desc</span><br><span style="font-style:italic">out of 9633</span></td> 
+      <td class="tg-73oq"><span style="color:#FF3838">1739 Desc</span><br><span style="font-style:italic">out of 9012</span></td>
+    </tr>
+    <tr>
+      <td class="tg-73oq">Final descendants for testing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+      <td class="tg-73oq">1087 Desc</td> 
+      <td class="tg-73oq">1501 Desc</td> 
+      <td class="tg-73oq">925 Desc</td> 
+      <td class="tg-73oq">1252 Desc</td> 
+      <td class="tg-73oq">1252 Desc</td> 
+      <td class="tg-73oq">1385 Desc</td>
+    </tr>
+    <tr>
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">Signif. DE genes</span></td>
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">83 Desc</span><br><span style="font-style:italic">out of 570</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">23 Desc</span><br><span style="font-style:italic">out of 153</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">42 Desc</span><br><span style="font-style:italic">out of 211</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">36 Desc</span><br><span style="font-style:italic">out of 265</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">174 Desc</span><br><span style="font-style:italic">out of 1118</span></td> 
+      <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">54 Desc</span><br><span style="font-style:italic">out of 307</span></td>
+    </tr>
+    <tr>
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">Overrepresented Test</span></td>
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.976</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.7745</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.1747</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9578</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9725</span></td> 
+      <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.485</span></td>
+    </tr>
+  </tbody>
+  </table>
+```{r, echo=FALSE, results='asis', message=FALSE}
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-05, 
+                          dbNames = c("fly")))
+trackDescGenes(filtered, source = "fly")
+```
+<hr>
+<h3>Significance : <b>10e^-10</b></h3>
+Coefficients :
+
+Intercept, BAT, BIC, E, BAT.E, BIC.E, 
+<br>
+<p style="text-align:center;"><b>Initial Count</b></p>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+padding:7px 15px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+overflow:hidden;padding:7px 15px;word-break:normal;}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>  
+<tr>
+  <th class="tg-73oq">Total number of genes</th>
+  <th class="tg-73oq">16740</th>
+</tr>
+</thead>
+<tbody>  
+<tr>
+  <td class="tg-73oq">After filtering, the number of descendant genes is</td>
+  <td class="tg-73oq"><span style="font-weight:bold;color:#2B86FF">2979 Desc</span></td>
+</tr>
+<tr>
+  <td class="tg-73oq">After fitting, the number of outliers is</td>
+  <td class="tg-73oq"><span style="color:#FF3838">8 Desc</span> out of 69</td>
+</tr>
+</tbody>
+</table>
+
+<p style="text-align:center;"><b>Differential Analysis Results</b></p>
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-spacing:0;}
+.tg td{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;
+  padding:10px 5px;word-break:normal;}
+.tg th{border-style:solid;border-width:0px;font-family:Arial, sans-serif;font-size:14px;font-weight:normal;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-65px{background-color:#ecf4ff;border-color:#000000;text-align:left;vertical-align:top}
+.tg .tg-7btt{border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+.tg .tg-73oq{border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-0pky"></th>
+    <th class="tg-7btt">BAT.E</th> 
+    <th class="tg-7btt">BIC.E</th> 
+    <th class="tg-7btt">BAT.E - BIC.E</th> 
+    <th class="tg-7btt">E</th> 
+    <th class="tg-7btt">E+BAT.E</th> 
+    <th class="tg-7btt">E+BIC.E</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-73oq">Removed by Ind. Filtering</td>
+    <td class="tg-73oq"><span style="color:#FF3838">1946 Desc</span><br><span style="font-style:italic">out of 9999</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">1666 Desc</span><br><span style="font-style:italic">out of 8520</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">1998 Desc</span><br><span style="font-style:italic">out of 10297</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">2632 Desc</span><br><span style="font-style:italic">out of 14549</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">1844 Desc</span><br><span style="font-style:italic">out of 9398</span></td> 
+    <td class="tg-73oq"><span style="color:#FF3838">1549 Desc</span><br><span style="font-style:italic">out of 7916</span></td>
+  </tr>
+  <tr>
+    <td class="tg-73oq">Final descendants for testing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td class="tg-73oq">1025 Desc</td> 
+    <td class="tg-73oq">1305 Desc</td> 
+    <td class="tg-73oq">973 Desc</td> 
+    <td class="tg-73oq">339 Desc</td> 
+    <td class="tg-73oq">1127 Desc</td> 
+    <td class="tg-73oq">1422 Desc</td>
+  </tr>
+  <tr>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">Signif. DE genes</span></td>
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">89 Desc</span><br><span style="font-style:italic">out of 618</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">25 Desc</span><br><span style="font-style:italic">out of 168</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">44 Desc</span><br><span style="font-style:italic">out of 241</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">16 Desc</span><br><span style="font-style:italic">out of 114</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">175 Desc</span><br><span style="font-style:italic">out of 1129</span></td> 
+    <td class="tg-65px"><span style="font-weight:bold;color:#2B86FF">61 Desc</span><br><span style="font-style:italic">out of 342</span></td>
+  </tr>
+  <tr>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">Overrepresented Test</span></td>
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9874</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.8125</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.386</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.8232</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.9809</span></td> 
+    <td class="tg-0pky"><span style="font-style:italic;color:#AAA">pval = 0.4579</span></td>
+  </tr>
+</tbody>
+</table>
+```{r, echo=FALSE, results='asis', message=FALSE}
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10, 
+                          dbNames = c("fly")))
+trackDescGenes(filtered, source = "fly")
+```
+
+```{r}
+
+```
+

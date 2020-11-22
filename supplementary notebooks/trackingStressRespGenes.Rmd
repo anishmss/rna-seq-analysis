@@ -1,0 +1,166 @@
+---
+title: "Tracking Stress Response genes in annotation filter"
+---
+
+```{r}
+loadDependencies()
+import("supplementary notebooks/trackingStressRespGenes.R")
+
+dseq_orig <- importRSEM("data/counts_per_sample")
+```
+
+# Problem 1: Where did the Descendant genes went?  
+```{r}
+# Gene Filter : Annotation from Five databases with Significance 10e-10
+# Sample Filter : No BAT_E_2, CAG_C_3, CAG_E_1, BIC_C_3
+# 
+# After filtering, the total number of genes in swiss_prot ID is : [ 6374 ]
+# After filtering, the number of descendant genes in swiss_prot ID is : [ 1159 ]
+# After fitting, number of outliers are : [ 24 ]
+# Number of descendants considered as an outlier : [ 4 ]
+# 
+# In BAT.E
+#         Genes removed by independent filtering : 2952 (600 Desc)
+#         Final number of descendant genes remaining for testing : (555 Desc)
+#         Number of DE genes : 503 (65 Desc)
+#         Overrepresented Test p-value : 0.9994
+# 
+# In BIC.E
+#         Genes removed by independent filtering : 0 (0 Desc)
+#         Final number of descendant genes remaining for testing : (1155 Desc)
+#         Number of DE genes : 3 (0 Desc)
+#         Overrepresented Test p-value : 0.4524
+# 
+# In BAT.E - BIC.E
+#         Genes removed by independent filtering : 2833 (583 Desc)
+#         Final number of descendant genes remaining for testing : (572 Desc)
+#         Number of DE genes : 54 (12 Desc)
+#         Overrepresented Test p-value : 0.1698
+# 
+# In E
+#         Genes removed by independent filtering : 3660 (724 Desc)
+#         Final number of descendant genes remaining for testing : (431 Desc)
+#         Number of DE genes : 104 (13 Desc)
+#         Overrepresented Test p-value : 0.9217
+# 
+# In E+BAT.E
+#         Genes removed by independent filtering : 2370 (501 Desc)
+#         Final number of descendant genes remaining for testing : (654 Desc)
+#         Number of DE genes : 946 (140 Desc)
+#         Overrepresented Test p-value : 0.9983
+# 
+# In E+BIC.E
+#         Genes removed by independent filtering : 2018 (435 Desc)
+#         Final number of descendant genes remaining for testing : (720 Desc)
+#         Number of DE genes : 70 (15 Desc)
+#         Overrepresented Test p-value : 0.1915
+
+filtered <- filterData(dseq_orig, 
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10, 
+                          dbNames = c("swiss_prot", "ortho_db", "fly", "shrimp", "pfam")),
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"))
+trackDescGenes(filtered)
+```
+
+# Problem 2 : How many Ex90 genes are descendants?
+```{r}
+# Total number of genes in EX90 : 17162
+# Number of descendant genes : 323
+
+df_ex90 <- getDf_Ex90(CUTOFF = 90) %>% rename(acc = "gene_id")
+df_ex90_descendants <- getDescendantGenes(geneids = df_ex90$gene_id)
+
+writeLines(paste0("Total number of genes in EX90 : ",nrow(df_ex90)))
+writeLines(paste0("Number of descendant genes : ", nrow(df_ex90_descendants)))
+```
+
+
+# Problem 3 : DEG with all genes that have Swiss-prot annotation. 10^-10 and 10^-5 filters
+```{r}
+# SIGNIFICANCE                                             10e^-5              | 10e^-10
+# Total number of genes                                  : 81278               | 59504
+# After filtering, the number of 'HSP' genes is          : (251 HSPs)          | (153 HSPs)
+# After fitting, number of outliers are                  : -361 (-1 HSPs)      | -316 (-1 HSPs)
+# 
+# Result of [ BAT.E ]          Removed by Ind. Filtering : -61168 (-198 HSPs)  | -0 (-0 HSPs)
+#                              Final HSPs for testing    : (52 HSPs)           | (152 HSPs)
+#                              Signif. DE genes          : 1268 (1 HSPs)       | 257 (0 HSPs)
+# 
+# Result of [ BIC.E ]          Removed by Ind. Filtering : -54263 (-178 HSPs)  | -38473 (-105 HSPs)
+#                              Final HSPs for testing    : (72 HSPs)           | (47 HSPs)
+#                              Signif. DE genes          : 97 (0 HSPs)         | 86 (0 HSPs)
+# 
+# Result of [ BAT.E-BIC.E ]    Removed by Ind. Filtering : -57016 (-191 HSPs)  | -41447 (-117 HSPs)
+#                              Final HSPs for testing    : (59 HSPs)           | (35 HSPs)
+#                              Signif. DE genes          : 193 (0 HSPs)        | 175 (0 HSPs)
+# 
+# Result of [ E ]              Removed by Ind. Filtering : -57016 (-191 HSPs)  | -41447 (-117 HSPs)
+#                              Final HSPs for testing    : (59 HSPs)           | (35 HSPs)
+#                              Signif. DE genes          : 235 (1 HSPs)        | 217 (1 HSPs)
+# 
+# Result of [ E+BAT.E ]        Removed by Ind. Filtering : -59768 (-196 HSPs)  | -40472 (-114 HSPs)
+#                              Final HSPs for testing    : (54 HSPs)           | (38 HSPs)
+#                              Signif. DE genes          : 3011 (4 HSPs)       | 2525 (3 HSPs)
+# 
+# Result of [ E+BIC.E ]        Removed by Ind. Filtering : -55643 (-185 HSPs)  | -39483 (-110 HSPs)
+#                              Final HSPs for testing    : (65 HSPs)           | (42 HSPs)
+#                              Signif. DE genes          : 307 (1 HSPs)        | 294 (0 HSPs)
+
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10, 
+                          dbNames = c("swiss_prot")))
+
+# qcPrepare(filtered, "vst", plotMSD = TRUE) %>% plotPCA_Sample(c("location", "condition"))
+counts(filtered@dseq) %>%  data.frame() %>% nrow()
+trackDescGenes(filtered)
+```
+
+# Problem 4 : DEG with all genes that have Fly annotation. 10^-10 and 10^-5 filters
+```{r}
+# SIGNIFICANCE                                             10e^-5              | 10e^-10  
+# Total number of genes                                  : 17690               | 16740
+# After filtering, the number of 'HSP' genes is          : 52 HSPs             | 52 HSPs
+# After fitting, number of outliers are                  : -69 (-1 HSPs)       | -69 (-1 HSPs)
+#   
+# Result of [ BAT.E ]          Removed by Ind. Filtering : -10582 (-42 HSPs)   | -9999 (-42 HSPs)
+#                              Final HSPs for testing    : (9 HSPs)            | (9 HSPs)
+#                              Signif. DE genes          : 848 (1 HSPs)        | 833 (0 HSPs)
+#   
+# Result of [ BIC.E ]          Removed by Ind. Filtering : -8374 (-30 HSPs)    | -8520 (-33 HSPs)
+#                              Final HSPs for testing    : (21 HSPs)           | (18 HSPs)
+#                              Signif. DE genes          : 34 (0 HSPs)         | 32 (0 HSPs)
+#   
+# Result of [ BAT.E-BIC.E ]    Removed by Ind. Filtering : -11536 (-43 HSPs)   | -10297 (-42 HSPs)
+#                              Final HSPs for testing    : (8 HSPs)            | (9 HSPs)
+#                              Signif. DE genes          : 141 (0 HSPs)        | 133 (0 HSPs)
+#   
+# Result of [ E ]              Removed by Ind. Filtering : -9633 (-38 HSPs)    | -14549 (-44 HSPs)
+#                              Final HSPs for testing    : (13 HSPs)           | (7 HSPs)
+#                              Signif. DE genes          : 146 (0 HSPs)        | 167 (0 HSPs)
+#
+# Result of [ E+BAT.E ]        Removed by Ind. Filtering : -9633 (-38 HSPs)    |  -9398 (-41 HSPs)
+#                              Final HSPs for testing    : (13 HSPs)           | (10 HSPs)
+#                              Signif. DE genes          : 1770 (1 HSPs)       | 1711 (1 HSPs)
+#
+# Result of [ E+BIC.E ]        Removed by Ind. Filtering : -9012 (-32 HSPs)    | -7916 (-30 HSPs)
+#                              Final HSPs for testing    : (19 HSPs)           | (21 HSPs)
+#                              Signif. DE genes          : 142 (0 HSPs)        | 137 (0 HSPs)
+
+
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-05, 
+                          dbNames = c("fly")))
+
+# qcPrepare(filtered, "vst", plotMSD = TRUE) %>% plotPCA_Sample(c("location", "condition"))
+
+trackDescGenes(filtered, source = "fly")
+```
+

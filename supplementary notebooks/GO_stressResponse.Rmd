@@ -1,0 +1,154 @@
+---
+title: "Genes under GO Stress Response"
+---
+```{r}
+# install.packages("request")
+```
+
+```{r}
+library(request)
+library(doParallel)
+library(jsonlite)
+
+loadDependencies()
+
+dseq_orig <- importRSEM("data/counts_per_sample")
+```
+
+# Step 1 : Get list of Uniprot IDs
+```{r}
+df_annot.orig <- read.csv(getPath_fromProjWd("data/annotation.20200701.csv"), stringsAsFactors = FALSE)
+ACCESSION_ID_COL <- "swiss_prot_acc"
+GO_ID_STRESS_RESPONSE <- "GO:0006950"
+out_dir <- paste0("results/Stress Reponse Genes (",ACCESSION_ID_COL,")")
+
+df_uniprotIDs <- df_annot.orig %>% 
+  select(gene_id, all_of(ACCESSION_ID_COL)) %>%  
+  distinct() %>% 
+  drop_na()
+```
+
+# Step 2 : Fetch GO terms of all Uniprot IDs
+```{r}
+# Function : Query Uniprot API using Uniprot ID to get GO ID
+getGO_frUniprotID <- function(unipID, aspect="P"){
+  r <- GET(paste0("https://www.ebi.ac.uk/proteins/api/proteins/", unipID), accept("application/json"))
+  
+  if(r$status_code != 200){
+    return(NA)
+  }
+  
+  res <- httr::content(r)
+  
+  list_GO <- sapply(res$dbReferences, function(x){
+    ifelse(x$type == "GO" && substring(x$properties$term, 1, 1) == aspect, x$id, NA)})
+  
+  list_GO <- list_GO[!is.na(list_GO)] 
+  return(list_GO)
+}
+
+# Function : Organize unipIds and goIDs to a data frame with columns [ uniprot_id , GO_id ]
+combineUniprotAndGO <- function(unipIDs, goIDs){
+  mappedIds <- c()
+  for(i in 1:length(unipIDs)){
+    goID <- goIDs[i][[1]]
+    if(is.null(goID)) goID <- NA
+    
+    names(goID) <- rep(unipIDs[i], length(goID))
+    mappedIds <- c(mappedIds, goID)
+  }
+  
+  df_go <- data.frame(uniprot_id = names(mappedIds), GO_id = mappedIds)
+  return(df_go)
+}
+```
+
+```{r}
+# Get a list of uniprot ids
+unipIDs <- df_uniprotIDs[[ACCESSION_ID_COL]] %>% unique()
+
+# For all uniprot IDs, get list of GO ids (in parallel process)
+# Runs in approx 30 mins
+registerDoParallel(cores = 4)
+goIDs <- foreach(g = unipIDs, .packages = c("magrittr", "request")) %dopar% {
+  getGO_frUniprotID(g)
+}
+
+# Construct data fram of uniprot_ids and go_ids
+df_go <- combineUniprotAndGO(unipIDs, goIDs)
+df_go
+
+# write.csv(df_go, "uniprotID_to_goID.csv", row.names = FALSE)
+```
+
+# Step 3 : Fetch Ancestors of all GO terms
+```{r}
+# Function : Query QuickGO API using GO ID to get Ancestors
+getIfDescendant <- function(desc_goID, anc_goID = GO_ID_STRESS_RESPONSE){ # default ancestor : "Response to Stress"
+  if(desc_goID == anc_goID){
+    return(TRUE)
+  }
+  
+  r <- GET(paste0("https://www.ebi.ac.uk/QuickGO/services/ontology/go/terms/",desc_goID,"/ancestors"),
+    query = list(relations = "is_a,part_of,occurs_in,regulates"),
+    accept("application/json"))
+  
+  if(r$status_code != 200)
+    return(NA)
+
+  res <- httr::content(r)
+  
+  ancestors <- unlist(res$results[[1]]$ancestors)
+  isDescendant <- anc_goID %in% ancestors
+  return(isDescendant)
+}
+
+# Create mapping from GO id to isDescendant
+# Runs in approx 12 mins
+goIDs_uniq <- df_go$GO_id %>% na.omit() %>% unique()
+map_isDescendant <- foreach(goID = goIDs_uniq, .packages = c("request", "jsonlite")) %dopar% {
+  getIfDescendant(goID)
+} 
+
+names(map_isDescendant) <- goIDs_uniq
+```
+
+# Step 4 : Save results
+### Uniprot ID | GO ID | isDescendant
+```{r}
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+col_isDesc <- map_isDescendant[df_go$GO_id]
+col_isDesc[sapply(col_isDesc, is.null)] <- NA
+col_isDesc <- unlist(col_isDesc)
+
+df_go <- df_go %>% mutate(isDescendant = col_isDesc)
+
+write.csv(df_go, paste0(out_dir,"/uniprotID_to_goID.csv"), row.names = FALSE)
+```
+
+### Uniprot ID (unique) | isDescendant (True if at least one GO isDescendant)
+```{r}
+# If at least one GO id is a descendant, then that uniprot_id is a descendant
+df_uniprotIsDesc <- df_go %>% 
+  group_by(uniprot_id) %>% 
+  summarise(isDescendant = sum(isDescendant) > 0 && !is.na(sum(isDescendant)))
+
+write.csv(df_uniprotIsDesc, paste0(out_dir, "/uniprotID_isDescendant.csv"), row.names = FALSE)
+```
+
+### Gene ID (unique) | isDescendant
+```{r}
+mapUnip_IsDesc <- df_uniprotIsDesc$isDescendant
+names(mapUnip_IsDesc) <- df_uniprotIsDesc$uniprot_id
+
+df_geneIsDesc <- df_uniprotIDs %>% 
+  select(gene_id, all_of(ACCESSION_ID_COL)) %>%  
+  mutate(isDescendant = mapUnip_IsDesc[df_uniprotIDs[[ACCESSION_ID_COL]]]) %>% 
+  group_by(gene_id) %>% 
+  summarise(isDescendant = sum(isDescendant) > 0 && !is.na(sum(isDescendant)))
+
+write.csv(df_geneIsDesc, paste0(out_dir,"/geneID_isDescendant.csv"), row.names = FALSE)
+```
+
+

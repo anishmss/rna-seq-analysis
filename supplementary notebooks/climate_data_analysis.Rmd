@@ -1,0 +1,248 @@
+---
+title: "Climate Data Analysis"
+---
+```
+Getting the data in GoogleDocVersion/Misc/NetCDF Data (1854-2019)
+Option 1: Using all NetCDF files 
+          - Download `NetCDF.zip` and unzip inside project's data/ folder
+          
+Option 2: Using already extracted data (Recommended)
+          - Download `Climate Data.csv` and place inside project's data/ folder
+
+source: https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v5/netcdf/
+citation: Boyin Huang, Peter W. Thorne, Viva F. Banzon, Tim Boyer, Gennady Chepurin, Jay H. Lawrimore, Matthew J. Menne, Thomas M. Smith, Russell S. Vose, and Huai-Min Zhang (2017): NOAA Extended Reconstructed Sea Surface Temperature (ERSST), Version 5. [indicate subset used]. NOAA National Centers for Environmental Information. doi:10.7289/V5T72FNM [access date].
+```
+```{r}
+# install.packages(c("ncdf4", "fields"))
+library(ncdf4)
+library(fields)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(cowplot)
+
+getSeaTempData <- function(nc, rangeLon, rangeLat){
+  longs <- ncvar_get(nc, "lon")
+  lats <- ncvar_get(nc, "lat")
+  
+  startLon_i <- which(longs == rangeLon[1])
+  startLat_i <- which(lats == rangeLat[1])
+  countLon_i <- length(which(longs >= rangeLon[1] & longs <= rangeLon[2]))-1
+  countLat_i <- length(which(lats >= rangeLat[1] & lats <= rangeLat[2]))-1
+  
+  sst <- ncvar_get(nc, "sst", start = c(startLon_i,startLat_i, 1, 1), count=c(countLon_i, countLat_i, 1, 1))
+  ssta <- ncvar_get(nc, "ssta", start = c(startLon_i,startLat_i, 1, 1), count=c(countLon_i, countLat_i, 1, 1))
+  return(list(sst=sst, ssta=ssta))
+}
+
+retrieveClimateData <- function(filenames, list_ranges){
+  for(r in list_ranges){
+    r[['date']] <- r[['sst']] <- r[['ssta']] <- c()
+  }
+  
+  for(f in filenames){
+    nc <- nc_open(f)
+    
+    for(i in names(list_ranges)){
+      r <- list_ranges[[i]]
+      seaTemp <- getSeaTempData(nc, r[['rangeLon']], r[['rangeLat']])
+      r[['sst']] <- c(r[['sst']], seaTemp[['sst']])
+      r[['ssta']] <- c(r[['ssta']], seaTemp[['ssta']])
+      r[['date']] <- c(r[['date']], strsplit(basename(f), "\\.")[[1]][[3]])
+      list_ranges[[i]] <- r
+    }
+    nc_close(nc)
+  }
+  return(list_ranges)
+}
+```
+
+
+```{r}
+list_ranges <- list(
+  'CAG' = list(rangeLon = c(120, 122), rangeLat = c(18, 20)),
+  'BAT' = list(rangeLon = c(118, 120), rangeLat = c(14, 16)),
+  # 'BIC' = list(rangeLon = c(122, 124), rangeLat = c(12, 14))
+  'BIC' = list(rangeLon = c(124, 126), rangeLat = c(12, 14))
+)
+
+in_dir <- "data/NetCDF" #only for NetCDF 
+out_dir <- "results/Climate Data (revised 11_16_2020)"
+
+start_year <- 1940
+end_year <- 2019
+
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r}
+# Option 1: Read all NetCDF files
+# filesNetcdf <- list.files(getPath_fromProjWd(in_dir), full.names = TRUE,
+#                           pattern = paste0("\\.", start_year:end_year, collapse = "|"))
+# data <- retrieveClimateData(filesNetcdf, list_ranges)
+# 
+# df <- data.frame(site = rep(names(data), each=length(filesNetcdf)), 
+#                  date = unlist(lapply(data, function(x) x[['date']]), use.names = FALSE), 
+#                  SST = unlist(lapply(data, function(x) x[['sst']]), use.names = FALSE), 
+#                  SSTA = unlist(lapply(data, function(x) x[['ssta']]), use.names = FALSE))
+# write.csv(df, file = paste0(out_dir,"/Climate Data.csv"), row.names = FALSE)
+
+# Option 2: Read data from previous saved CSV file
+df <- read.csv(getPath_fromProjWd("data/Climate Data.csv"), row.names = NULL)
+df_filtered <- df %>% filter(date >= start_year*100 & date <= (end_year+1)*100)
+```
+
+```{r}
+# Plot Violin
+list_violins <- list()
+for(column in c("SST", "SSTA")){
+  p2 <- ggplot(df, aes_string(x = "site", y = column, col="site")) +
+          labs(title = column, y = "degree Celsius", x = "") +
+          geom_violin(trim=FALSE) +
+          geom_boxplot(width=0.1,outlier.shape=NA) + 
+          theme_bw()
+  list_violins[[column]] <- p2
+  ggsave(p2, width = 6, height=5, device="png", path=out_dir, filename = paste0(column, " violin plot.png"))
+}
+list_violins[['SST']] <- list_violins[['SST']] + labs(title = "Distribution of average monthly sea surface temperature")
+
+list_violins[['SSTA']] <- list_violins[['SSTA']] + labs(title = "Distribution of average monthly sea surface temperature anomaly")
+
+# Save summary statistics
+df_summary <- df %>% group_by(site) %>% 
+  summarise(SST_avg = mean(SST), SST_sd = sd(SST), SSTA_avg = mean(SSTA), SSTA_sd = sd(SSTA))
+write.csv(df_summary, file = paste0(out_dir,"/Summary Statistics.csv"))
+```
+
+```{r}
+library(TTR)
+
+# Monthly Time Series
+df_filtered$SSTA_smooth <- unlist(lapply(unique(df_filtered$site), function(x){
+  SMA(df_filtered[df_filtered$site == x, "SSTA"], n = 300)
+}))
+ggplot(df_filtered, aes(x=date, y=SSTA_smooth, col=site)) +
+  geom_line() +
+  labs(title="Simple Moving Average(200) of Monthly SSTA") +
+  coord_cartesian(xlim=c(200000, 201900)) +
+  theme_bw()
+
+# Yearly Time Series
+df_filtered$year <- floor(df_filtered$date/100)
+df_yearavg <- df_filtered %>% group_by(site, year) %>% summarize(SSTA_yearavg = mean(SSTA))
+df_yearavg$SSTA_yearavgSmooth <- unlist(lapply(unique(df_yearavg$site), function(x){
+  SMA(df_yearavg[df_yearavg$site == x, "SSTA_yearavg"], n = 5)
+}))
+plot_ts <- ggplot(df_yearavg, aes(x=year, y=SSTA_yearavgSmooth, col=site)) +
+  geom_abline(slope = 0, intercept = 0, color="gray70", linetype=2) +
+  geom_line(size=1.1) +
+  labs(title="5-year moving average of SSTA", y="degree Celsius") +
+  coord_cartesian(xlim=c(2000, 2019), ylim = c(-0.3, max(df_yearavg$SSTA_yearavgSmooth))) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+plot_ts
+```
+```{r}
+library(grid)
+library(ggplotify)
+library(sp)
+gadm <- readRDS(getPath_fromProjWd("data/PH spatial map/gadm36_PHL_1_sp.rds"))
+colors = rep("#DADADA",length(gadm$NAME_1))
+colors[gadm@data$NAME_1 =="Cagayan"] = "#619CFF"
+colors[gadm@data$NAME_1 %in% c("Albay", "Camarines Norte", "Camarines Sur", "Catanduanes", "Masbate", "Sorsogon")] = "#00BA38"
+colors[gadm@data$NAME_1 =="Bataan"] = "#F8766D"
+# plotGadm <- as.ggplot(function() {
+#   dev.new(width=4, height=7)
+#   plot(gadm, col = colors, border = FALSE)
+#   legend(125,19,c("Cagayan","Bicol (Sorsogon)", "Bataan"),fill=c("#7570B3","#D95F02", "#1B9E77"))
+# })
+# plotGadm
+
+png(file.path(out_dir, "gadm.png"), width = 1200, height = 1200)
+plot(gadm, col = colors, border = FALSE)
+op <- par(cex = 2.2)
+legend(114.5,19,c("Cagayan","Bicol (Sorsogon)", "Bataan"),fill=c("#619CFF","#00BA38", "#F8766D"))
+dev.off()
+
+plotGadm <- ggdraw() + draw_image(file.path(out_dir, "gadm.png"), scale = 1.3)
+```
+
+
+
+```{r}
+# legend_part <- get_legend(
+#   ggplot(df, aes(x=SST, fill=site)) + geom_histogram() + theme(legend.text = element_text(size=14))
+# )
+
+common_theme <- theme(legend.position = "none", 
+                      axis.text = element_text(size=14),
+                      axis.title = element_text(size=14),
+                      plot.title = element_text(size=14))
+
+combined <- cowplot::plot_grid(plotGadm, 
+                               plot_grid(list_violins[[1]] + common_theme, list_violins[[2]] + common_theme, 
+                                         label_x = 0, labels = c("(b)", "(c)"), ncol = 1), 
+                               labels = c("(a)", ""), nrow = 1)
+
+
+common_theme <- theme(legend.position = "none", 
+                      axis.text = element_text(size=10),
+                      axis.title = element_text(size=11),
+                      plot.title = element_text(size=10))
+combined <- cowplot::plot_grid(plotGadm, list_violins[[1]] + common_theme, list_violins[[2]] + common_theme, 
+                               labels = c("(a)", "(b)", "(c)"), nrow = 1, rel_widths = c(0.3, 0.36, 0.36))
+# combined article width 6.6
+ggsave(combined, width = 13.2, height=4,device="png", path=out_dir, filename = "combined2.png")
+```
+
+
+# Extra code chunks (only for NetCDF data files)
+```{r}
+# Extra code 1 - Explore single time point
+
+filename <- getPath_fromProjWd("data/NetCDF/ersst.v5.185612.nc")
+data1 <- retrieveClimateData(filename, list_ranges)
+data1
+```
+
+```{r}
+# Extra code 2 - Plot the map given a location
+
+plotSeaTempData <- function(filename, rangeLon, rangeLat, padding = 4){
+  nc <- nc_open(filename)
+  longs <- ncvar_get(nc, "lon")
+  lats <- ncvar_get(nc, "lat")
+  
+  # Note : Can't plot a 2x2 grid. Must be a 4x4 grid or greater.
+  #        Solution, provide a padding that is greater than 0
+  rangeLon[1] <- rangeLon[1] - padding
+  rangeLon[2] <- rangeLon[2] + padding
+  rangeLat[1] <- rangeLat[1] - padding
+  rangeLat[2] <- rangeLat[2] + padding
+  list_seaTemp <- getSeaTempData(nc, rangeLon, rangeLat)
+  
+  # Plot
+  image.plot(longs[which(longs %in% rangeLon[1]:rangeLon[2])], 
+             lats[which(lats %in% rangeLat[1]:rangeLat[2])], 
+             list_seaTemp[['sst']])
+  map(add=TRUE)
+  
+  nc_close(nc)
+}
+
+filename <- getPath_fromProjWd("data/NetCDF/ersst.v5.201912.nc")
+r <- list_ranges[['CAG']]
+
+plotSeaTempData(filename, r[['rangeLon']], r[['rangeLat']], padding = 6)
+```
+
+```{r}
+# Extra code 3 - Plot whole world
+nc <- nc_open(getPath_fromProjWd("data/NetCDF/ersst.v5.201912.nc")) 
+longs <- ncvar_get(nc, "lon")
+lats <- ncvar_get(nc, "lat")
+sst <- ncvar_get(nc, "sst", start = c(1,1, 1, 1), count=c(-1,-1, 1, 1))
+image.plot(longs, lats, sst)
+map(add=TRUE)
+nc_close(nc)
+```

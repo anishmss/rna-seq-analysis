@@ -1,0 +1,321 @@
+---
+title: "Supplementary Information. Comparative transcriptome profiling of heat stress response of the mangrove crab Scylla serrata across different sites"
+author: Anish M.S. Shrestha, Crissa Ann I. Lilagan, Joyce Emlyn B. Guiao, Maria Rowena R. Romana-Eguia, and Ma. Carmen Ablan Lagman
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+documentclass: article
+output: 
+  bookdown::html_document2:
+    toc: false
+    number_sections: true
+    keep_md: true
+  bookdown::pdf_document2:
+    toc: true
+    number_sections: true
+bibliography: [suppl.bibtex]
+biblio-style: apalike
+link-citations: yes
+---
+
+<!-- launch the "DGE Analysis of Mudcrabs.Rpoj before knitting this.  -->
+<!-- otherwise errors out due to filepath issues -->
+<!-- another option might be to change "Knit Directory" in "Knit" -->
+
+```{r setup, include=FALSE}  
+
+knitr::opts_chunk$set(fig.height=5, fig.width=9, fig.align="center", echo = FALSE, warning=FALSE)
+
+ipak <- function(pkg){
+    new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+    if (length(new.pkg)) 
+        install.packages(new.pkg, dependencies = TRUE)
+    sapply(pkg, library, character.only = TRUE)
+}
+
+# usage
+packages <- c("knitr", "captioner", "stringr", "devtools", "bookdown","kableExtra","here")
+ipak(packages)
+```
+
+```{r}
+QC_folder_name <- "QC (2020-07-23_124456)"
+DE_result_folder_name <- "DE (2020-07-25_141629)"
+```
+
+
+# Data sets
+
+## Read dataset {#sec_readdataset}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_read <- read.csv("../data/readdataset.csv", fileEncoding ="UTF-8-BOM", header=TRUE)
+```
+
+Table \@ref(tab:ReadDatasetTableHtml) shows the size of each RNA-seq sample.
+
+Dataset Label = SITE_TREATMENT_SERIALNUMBER_ID   
+SITE is BAT for Bataan, BIC for Bicol, and CAG for Cagayan;   
+CONDITION/TREATMENT is C for Control, and E for Experiment (Stressed)  
+Filtering refers to applying sortmeRNA and Trimmomatic.  
+
+```{r "ReadDatasetTablePDF", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::pdf_document2"){
+  library(pander)
+  pander(df_read, align = "c", "latex",
+        caption = 'Read dataset',
+        col.names = c("Group","No. read pairs","NO. filtered", "No. mapped concordantly"),
+        booktabs = T)
+}
+
+```
+
+
+```{r "ReadDatasetTableHtml", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(df_read, align = "c", "html",
+             caption = 'Read data set',
+             col.names = c("Group","No. read pairs","NO. filtered", "No. mapped concordantly")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+## Read metadata {#sec_read_metadata}
+
+Metadata of the samples:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+df_readmetadata <- read.csv("../data/NGS_morphodata_summary.csv", fileEncoding ="UTF-8-BOM", header=TRUE)
+```
+
+```{r "ReadMetaDatasetTableHtml", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(df_readmetadata, align = "c", "html",
+             caption = 'Read data set metadata',
+             col.names = c("Sample name","Sex","Initial weight (g)", "Final weight (g)","Carapice width initial(mm)","Carapice width final (mm)")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+
+
+<!-- # Assembly length statistics -->
+<!-- The assembly length statistics are shown in Table \@ref(tab:AssemblyLengthStat), where the first column is computed based on all transcripts, and the second column is computed by selecting one longest isoform for every Trinity-gene. -->
+
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- df_asslength <- read.csv("../results/assembly/assembly length statistics.csv", fileEncoding ="UTF-8-BOM", check.names = FALSE) -->
+<!-- ``` -->
+
+<!-- ```{r "AssemblyLengthStat", echo=FALSE, warning=FALSE} -->
+<!-- fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting -->
+<!-- if (fmt == "bookdown::html_document2"){ -->
+<!-- kableExtra::kable(df_asslength, align = "c", "html", -->
+<!--              caption = 'Assembly length statistics', -->
+<!--              col.names = c(" ","All transcripts","Longest isoform")) %>% -->
+<!--       kableExtra::kable_styling(full_width = F) -->
+<!-- } -->
+<!-- ``` -->
+
+
+# Exploratory data analysis and quality control prior to differential expression analysis {#sec_qc_dge}
+Differential expression analysis was performed on the set of genes for which we found a hit in the proteome of *D. melanogaster* such that the E-value was less than $10^-10$ and the alignment covered at least 50% of the protein length. Due to issues with data quality, we removed 4 samples, one each from the following groups BAT E, CAG C, CAG E, BIC C. 
+
+For the remaining datasets, the distribution of read counts among genes is shown in Fig. \@ref(fig:read-count-distr). The plots indicate that samples within each group have a similar distribution in the mid-level expression range. 
+
+
+```{r "read-count-distr", echo=FALSE,out.width = '45%',fig.show='hold',fig.cap="Distribution of read counts."}
+knitr::include_graphics(c(here("results","QC",QC_folder_name,"Box Plot of Read Counts.png"), 
+                          here("results","QC",QC_folder_name,"Density Plot of Read Counts.png")))
+```
+To further explore the within-sample similarity, we computed pairwise correlation coefficients using the count data obtained by applying a variance-stabilizing transformation to the raw counts to correct for mean-variance dependence (see Fig. \@ref(fig:vst)). We observe high level of correlation between samples of the same group (see Fig.\@ref(fig:corr-heatmap)).
+
+```{r "vst", echo=FALSE,out.width = '40%',fig.show='hold',fig.cap="Mean-variance scatter plot after applying variance-stabilizing transformation to raw count data."}
+knitr::include_graphics(here("results","QC",QC_folder_name,"Mean SD.png"))
+```
+
+```{r "corr-heatmap", echo=FALSE,out.width = '30%',fig.show='hold',fig.cap="Correlation of within-group samples"}
+knitr::include_graphics(c(here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (BIC_C).png"),
+                          here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (CAG_C).png"),
+                          here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (BAT_C).png"),
+                          here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (BIC_E).png"),
+                          here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (CAG_E).png"),
+                          here("results","QC",QC_folder_name,"Cluster w Correlation Matrix (BAT_E).png")
+                          )
+                       )
+
+```
+
+Further, we performed Principal Component Analysis on the transformed data. Fig.\@ref(fig:pca) shows the samples plotted based on the first two principal components. The first principal component seems to explain variance due to the site factor. This global view of the data provided by the PCA does not seem to clearly capture variance due to the treatment factor.
+
+```{r "pca",echo=FALSE,out.width = '50%',fig.show='hold',fig.cap="PCA clustering of the samples"}
+knitr::include_graphics(c("../results/QC/QC (2020-07-23_124456)/PCA loc.con.png"))
+```
+
+Other factors, namely sex, weight, carapace width  do not explain the PCA clustering, as shown in  Fig.\@ref(fig:pca_others) below.
+```{r "pca_others", echo=FALSE,out.width = '30%',fig.show='hold',fig.cap="Checking if other factors explain the PCA"}
+knitr::include_graphics(c(here("results","QC",QC_folder_name,"PCA_others","PCA ctg_carap_init.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA ctg_carap_final.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA ctg_carap_diff.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA ctg_weight_init.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA ctg_weight_final.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA ctg_weight_diff.png"),
+                          here("results","QC",QC_folder_name,"PCA_others","PCA sex.png")
+                          )
+                       )
+```
+
+
+# List of DE genes (signicant site-specific main effect of heat )  {#sec_de}
+## Cagayan
+### List of DE genes
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+cag <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "cag.csv"),fileEncoding ="UTF-8") %>%
+#dplyr::top_n(-20, padj)
+dplyr::arrange(desc(padj)) %>% head(20) %>% subset(select=-fly_acc)
+```
+
+```{r "DE cag", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(cag, align = "c", "html",
+             caption = 'DDE genes in Bicol-Bataan comparison',
+             col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Descendant of Stress reponse GO term")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+### Expression profile of the top 10 (by log-fold change) DE genes
+```{r "DE cag expression", echo=FALSE,out.width = '40%',fig.show='hold',fig.cap="Expression profile of top 10 (by log fold change) DE genes."}
+knitr::include_graphics(here("results","DE",DE_result_folder_name,"Visualization","test - E","Top DE Genes Read Count (top padj).png"))
+```
+
+## Bataan
+### List of DE genes
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+bat <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "bat.csv"),fileEncoding ="UTF-8") %>%
+dplyr::arrange(desc(padj)) %>% head(20)  %>% subset(select=-fly_acc)
+
+```
+
+```{r "DE bat", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(bat, align = "c", "html",
+             caption = 'DDE genes in Bicol-Bataan comparison',
+             col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Descendant of Stress reponse GO term")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+### Expression profile of the top 10 (by log-fold change) DE genes
+```{r "DE bat expression", echo=FALSE,out.width = '40%',fig.show='hold',fig.cap="Expression profile of top 10 (by log fold change) DE genes."}
+knitr::include_graphics(here("results","DE",DE_result_folder_name,"Visualization","test - E + BAT.E","Top DE Genes Read Count (top padj).png"))
+```
+
+## Bicol
+### List of DE genes
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+bic <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "bic.csv"),fileEncoding ="UTF-8")%>%
+dplyr::arrange(desc(padj)) %>% head(20)  %>% subset(select=-fly_acc)
+
+```
+
+```{r "DE bic", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(bic, align = "c", "html",
+             caption = 'DDE genes in Bicol-Bataan comparison',
+             col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Descendant of Stress reponse GO term")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+### Expression profile of the top 10 (by log-fold change) DE genes
+```{r "DE bic expression", echo=FALSE,out.width = '40%',fig.show='hold',fig.cap="Expression profile of top 10 (by log fold change) DE genes."}
+knitr::include_graphics(here("results","DE",DE_result_folder_name,"Visualization","test - E + BIC.E","Top DE Genes Read Count (top padj).png"))
+```
+
+# List of DDE genes {#sec_dde}
+
+## Cagayan-Bataan Comparison
+
+### Gene List 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+cag_v_bat <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "cagVbat.csv"),fileEncoding ="UTF-8") %>%
+#dplyr::top_n(-20, log2FoldChange)
+  dplyr::arrange(log2FoldChange) %>% head(20)  %>% subset(select=-fly_acc)
+```
+
+```{r "DDE cag_v_bat", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(cag_v_bat, align = "c", "html",
+             caption = 'DDE genes in Cagayan-Bataan comparison',
+             col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Descendant of Stress reponse GO term")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+### Interaction plots for DDE genes between Cagayan and Bataan
+```{r "interaction CAG BAT", echo=FALSE, out.width = '100%',fig.show="hold",fig.align="center",fig.cap="Interaction plots for Cagayan-Bataan comparisons"}
+knitr::include_graphics(c(here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E","Top Interaction Plots (by lfc) (1).png")
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E","Top Interaction Plots (by lfc) (2).png"),
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E","Top Interaction Plots (by lfc) (3).png"),
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E","Top Interaction Plots (by lfc) (4).png"),
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E","Top Interaction Plots (by lfc) (5).png")
+                          ))
+```
+
+## Cagayan-Bicol Comparison
+
+### Gene list
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+cag_v_bic <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "cagVbic.csv"),fileEncoding ="UTF-8") %>%
+dplyr::arrange(log2FoldChange) %>% head(20)  %>% subset(select=-fly_acc)
+
+```
+
+```{r "DDE cag_v_bic", echo=FALSE, warning=FALSE}
+fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting
+if (fmt == "bookdown::html_document2"){
+kableExtra::kable(cag_v_bic, align = "c", "html",
+             caption = 'DDE genes in Cagayan-Bicol comparison',
+             col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Descendant of Stress reponse GO term")) %>%
+      kableExtra::kable_styling(full_width = F)
+}
+```
+
+### Interaction plots
+```{r "interaction CAG BIC", echo=FALSE, out.width = '100%',fig.show="hold",fig.align="center",fig.cap="Interaction plots for Cagayan-Bataan comparisons"}
+knitr::include_graphics(c(here("results","DE",DE_result_folder_name,"Visualization","test - BIC.E","Top Interaction Plots (by lfc) (1).png")
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BIC.E","Top Interaction Plots (by lfc) (2).png"),
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BIC.E","Top Interaction Plots (by lfc) (3).png"),
+                          #here("results","DE",DE_result_folder_name,"Visualization","test - BIC.E","Top Interaction Plots (by lfc) (4).png")
+                          ))
+```
+
+<!-- ## Bicol - Bataan comparison -->
+
+<!-- ### Gene list -->
+<!-- ```{r, echo=FALSE, message=FALSE, warning=FALSE} -->
+<!-- bic_v_bat <- read.csv(here("results", "DE",DE_result_folder_name,"DE gene list (unique) stress", "bicVbat.csv"),fileEncoding ="UTF-8-BOM", check.names = FALSE) -->
+<!-- ``` -->
+
+<!-- ```{r "DDE bic_v_bat", echo=FALSE, warning=FALSE} -->
+<!-- fmt <- rmarkdown::default_output_format(knitr::current_input())$name #find the output format when knitting -->
+<!-- if (fmt == "bookdown::html_document2"){ -->
+<!-- kableExtra::kable(bic_v_bat, align = "c", "html", -->
+<!--              caption = 'DDE genes in Bicol-Bataan comparison', -->
+<!--              col.names = c(" ","gene_id","baseMean","log2FoldChange","lfc standard error","pvalue","p-value adjusted","Fruit fly Uniprot ID","Fruit fly Uniprot accession","Descendant of Stress reponse GO term")) %>% -->
+<!--       kableExtra::kable_styling(full_width = F) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ### Interaction plots -->
+<!-- ```{r "interaction BIC BAT", echo=FALSE, out.width = '100%',fig.show="hold",fig.align="center",fig.cap="Interaction plots for Cagayan-Bataan comparisons"} -->
+<!-- knitr::include_graphics(c(here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E - BIC.E","Top Interaction Plots (lfc).png-1.png"), -->
+<!--                           here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E - BIC.E","Top Interaction Plots (lfc).png-2.png"), -->
+<!--                           here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E - BIC.E","Top Interaction Plots (lfc).png-3.png"), -->
+<!--                           here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E - BIC.E","Top Interaction Plots (lfc).png-4.png"), -->
+<!--                           here("results","DE",DE_result_folder_name,"Visualization","test - BAT.E - BIC.E","Top Interaction Plots (lfc).png-5.png") -->
+<!--                           )) -->
+<!-- ``` -->

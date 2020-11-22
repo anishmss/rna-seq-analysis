@@ -1,0 +1,32 @@
+---
+title: "1b. Swissprot only (10e^-10) "
+
+output: html_notebook
+---
+```{r}
+import("supplementary notebooks/trackingStressRespGenes.R")
+dseq_orig <- importRSEM()
+```
+
+```{r, echo=FALSE, results='asis', message=FALSE}
+filtered <- filterData(dseq_orig, 
+                        samples = c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"),
+                        filtername = "annot", verbose = FALSE,
+                        args=list(
+                          signif = 10e-10, 
+                          dbNames = c("swiss_prot")))
+fitted <- modelfit(filtered)
+fitted <- signifTest(fitted, testIds = list("BAT.E", "BIC.E", "BAT.E - BIC.E", "E", "E + BAT.E", "E + BIC.E"))
+```
+
+```{r, echo=FALSE, results='asis', message=FALSE}
+fitted <- trackDescGenes(filtered = filtered, fitted = fitted)
+```
+
+
+```{r, echo=FALSE, results='hide'}
+exportDEgenes(fitted, dbNames = c("swiss_prot"))
+```
+
+
+

@@ -1,0 +1,49 @@
+---
+title: "PCA plots colored by metadata"
+---
+
+```{r  message=FALSE}
+loadDependencies()
+dseq_orig <- importRSEM("data/counts_per_sample")
+out_dir <- "results/PCA Metadata"
+
+dseq_orig <- addMetadata(dseq_orig, "data/NGS_morphodata_summary.csv") %>% 
+  addCategories(list("weight_init" = 3, "weight_final" = 3, "weight_diff" = 3, 
+                     "carap_init" = 3, "carap_final" = 3, "carap_diff" = 3))
+```
+
+```{r}
+df_annot.orig <- read.csv(getPath_fromProjWd("data/annotation.20200701.csv"), stringsAsFactors = FALSE)
+annotSignif <- 1e-10
+alnLenThreshold <- 50
+df_annot <- df_annot.orig %>% filter(fly_stat_sig < annotSignif & fly_len_perc >= alnLenThreshold )
+
+dseq <- filter.genes(dseq_orig, df_annot) %>%
+        filter.samples(c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3"))
+```
+
+```{r}
+dseq_qc <- qcPrepare(dseq)
+
+factorsMeta_binned <- c("location","condition","sex",
+                        "ctg_weight_init","ctg_weight_final","ctg_weight_diff",
+                        "ctg_carap_init", "ctg_carap_final", "ctg_carap_diff")
+
+for(f in factorsMeta_binned){
+  p <- qc.plotSample_PCA(dseq_qc, f, showSamplenames = FALSE, save = FALSE, returnPlot = TRUE)
+  savePlot(p, 6, 6, out_dir, filename = paste0("PCA ", f))
+}
+```
+Examining PCA plots of genes without BAT_E_2 only
+```{r}
+dseq2 <- filter.genes(dseq_orig, df_annot) %>%
+        filter.samples(c("BAT_E_2"))
+
+dseq_qc2 <- qcPrepare(dseq2)
+
+for(f in factorsMeta_binned){
+  p <- qc.plotSample_PCA(dseq_qc2, f, showSamplenames = FALSE, save = FALSE, returnPlot = TRUE)
+  savePlot(p, 6, 6, paste0(out_dir,"/No BAT_E_2"), filename = paste0("PCA ", f))
+}
+```
+
