@@ -1,4 +1,18 @@
-# Running Main.Rmd
+# Introduction
+This repository contains scripts to reproduce the results presented in *Shrestha et al.: Comparative transcriptome profiling of heat stress response of the mangrove crab Scylla serrata across different sites.*
+
+The raw RNA-seq reads in fastq format can be downloaded from DDBJ Sequence Read Archive under the accession number DRA010977. Here is a direct [link](https://ddbj.nig.ac.jp/DRASearch/submission?acc=DRA010977). There are 29 RNA-seq samples: DRX242230 -- DRX242258. Each sample is from one of 3 sites: Bataan, Cagayan, Bicol; and one of 2 conditions: control or heat-stressed. Sample information can be obtained by clicking the link to each experiment.
+
+# Assembly, mapping, quantification
+The pipeline for assembly, mapping, and quantification is provided as a Snakemake pipeline. Fill out the **config.yaml** in the repository and fill out the entries corresponding to the file paths where the RNA-seq samples have been downloaded.
+Then run the following:
+
+The transciptome assembly we obtained can be downloaded here.
+The Bowtie2-RSEM quantification results can be obtained here.
+
+# Differential expression analysis
+Differential expression analysis and the quality-control steps prior to it can be done using the R Markdown noteboo Main.Rmd.
+
 ### Setup
 Place all Input Files in `data` folder:
 
