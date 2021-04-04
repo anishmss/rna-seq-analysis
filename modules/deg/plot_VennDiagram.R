@@ -1,6 +1,6 @@
 deg.plot_VennDiagram <- function(fitted, tests, subtitle="", save = ..saveImg_deg, returnPlot = FALSE){
-  list_degenes <- lapply(tests[['testIDs']], function(x) fitted@list_signifTest[[x]]@df_degenes[['gene_id']])
-  names(list_degenes) <- tests[['labels']]
+  list_degenes <- lapply(tests[['contrasts']], function(x) fitted@list_signifTest[[x]]@df_degenes[['genes']])
+  names(list_degenes) <- tests[['plotLabels']]
 
   require(purrr)
   require(RVenn)

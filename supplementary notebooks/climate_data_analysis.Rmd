@@ -161,7 +161,7 @@ colors[gadm@data$NAME_1 =="Bataan"] = "#F8766D"
 png(file.path(out_dir, "gadm.png"), width = 1200, height = 1200)
 plot(gadm, col = colors, border = FALSE)
 op <- par(cex = 2.2)
-legend(114.5,19,c("Cagayan","Bicol (Sorsogon)", "Bataan"),fill=c("#619CFF","#00BA38", "#F8766D"))
+legend(114.5,19,c("Cagayan","Bicol", "Bataan"),fill=c("#619CFF","#00BA38", "#F8766D"))
 dev.off()
 
 plotGadm <- ggdraw() + draw_image(file.path(out_dir, "gadm.png"), scale = 1.3)

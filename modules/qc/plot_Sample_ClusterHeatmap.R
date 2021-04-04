@@ -1,20 +1,23 @@
-qc.plotSample_ClusterHeatmap <- function(dseq_qc, subsetByLocation=TRUE, subsetBySampleGrps=TRUE, save=..saveImg_qc){
-  # Plot all samples in one heatmap
+qc.plotSample_ClusterHeatmap <- function(factors = qc.getDesignFactors(), isDisplayVal=TRUE, save=..saveImg_qc){
+  dseq_qc <- qc.getDeseq()
+  levels_factor1 <- levels(dseq_qc[[factors[[1]]]])
+  
+  # 1. Plot all samples in one heatmap
   ..plotSample_ClusterHeatmap(dseq_qc, save = save)
   
-  # Plot samples grouped by Location
-  if(subsetByLocation){
-    for(location in levels(dseq_qc[['location']])){
-      ..plotSample_ClusterHeatmap(dseq_qc, subsetByFactor = 'location', levelName = location, isDisplayVal = TRUE, save = save)
-    }
+  # 2. Plot samples grouped by first factor
+  for(lvl in levels_factor1){
+    ..plotSample_ClusterHeatmap(dseq_qc, subsetByFactor = factors[[1]], levelName = lvl, isDisplayVal = TRUE, save = save)
   }
   
-  # Plot all samples grouped by Location & Condition
-  if(subsetBySampleGrps){
-    for(samplegrp in levels(dseq_qc[['samplegrp']])){
-      ..plotSample_ClusterHeatmap(dseq_qc, subsetByFactor = 'samplegrp', levelName = samplegrp, isDisplayVal = TRUE, save = save)
-    }    
+  # 3. Plot all samples grouped by Location & Condition
+  if(length(factors) == 2){
+    dseq_qc[['..samplegrp']] <- factor(paste(dseq_qc[[factors[[1]]]], dseq_qc[[factors[[2]]]], sep = "_"))
+    for(samplegrp in levels(dseq_qc[['..samplegrp']])){
+      ..plotSample_ClusterHeatmap(dseq_qc, subsetByFactor = '..samplegrp', levelName = samplegrp, isDisplayVal = TRUE, save = save)
+    }       
   }
+
   invisible(dseq_qc)
 }
 

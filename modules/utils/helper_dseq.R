@@ -1,8 +1,8 @@
 getCounts <- function(dseq, isNormalized = TRUE){ 
-  if(class(dseq) == "DESeqTransform" || !isNormalized){
-    mat_counts <- assay(dseq)   # variance stabilized transformed counts
+  if(class(dseq) == "DESeqTransform" || !isNormalized){ 
+    mat_counts <- assay(dseq)   # Use this for QC plots (i.e. returns variance stabilized transformed counts)
   }else{    
-    mat_counts <- counts(dseq, normalized=TRUE)
+    mat_counts <- counts(dseq, normalized=TRUE) # Use this for anything else
   }
   return(mat_counts)
 }

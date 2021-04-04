@@ -1,6 +1,6 @@
 # OPTION 1 : Plots several interaction plots in separate image files (shows coefficients table)
 deg.plotInteractionPlot_Single <- function(fitted, tests, topX = 5, orderby = "lfc", labelFrom_df=NA, labelFrom_column=NA, df_isDesc = NA,  save = ..saveImg_deg, returnPlot = FALSE){
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     sigTestRes <- fitted@list_signifTest[[testId]]
     df_degenes <- sigTestRes@df_degenes
     topGenes <- getTop_Geneids(df_degenes, topX = topX, orderby = orderby)
@@ -20,7 +20,7 @@ deg.plotInteractionPlot_Single <- function(fitted, tests, topX = 5, orderby = "l
 
 # OPTION 2 : Plots several interaction plots in 1 PDF file
 deg.plotInteractionPlot_Multiple <- function(fitted, tests, topX=100, orderby="lfc", labelFrom_df=NA, labelFrom_column=NA, df_isDesc=NA){
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     ..plotInteractionPlot_Multiple(fitted, testId, topX, orderby, labelFrom_df, labelFrom_column, df_isDesc)
   }
   return(invisible(fitted))
@@ -38,7 +38,7 @@ deg.plotInteractionPlot_Multiple <- function(fitted, tests, topX=100, orderby="l
   df_counts <- getCounts_asDf(dseq)
   counts <- df_counts %>%
     filter(gene_id == geneName) %>% 
-    select(colnames(.)[grepl(paste0(..getInteractionGroups(testId), collapse = "|"), colnames(.))]) %>% 
+    select(colnames(.)[grepl(paste0(..getLevelsFromContrast(dseq, testId), collapse = "|"), colnames(.))]) %>% 
     gather(colnames(.)[-1], key = "samplename", value = "counts") %>% 
     merge(., data.frame(colData(dseq)), by="samplename") %>% 
     mutate(logcounts = log(counts + 1, base = 2))
@@ -50,7 +50,7 @@ deg.plotInteractionPlot_Multiple <- function(fitted, tests, topX=100, orderby="l
   p <- ggplot(counts, aes(x = condition, y = logcounts, color=location, shape=condition, group=location)) +
     geom_point(position=position_jitter(w = 0.1,h = 0), size=3) +
     ylab("log2(counts + 1)") +
-    ggtitle(label = paste("Read counts of gene", geneNameLabel, subtitle), subtitle = paste0("Test: ", sigTestRes@testId)) +
+    ggtitle(label = paste("Read counts of gene", geneNameLabel, subtitle), subtitle = paste0("Test: ", sigTestRes@contrast)) +
     scale_shape_manual(values=c(1,0)) + 
     stat_summary(fun = mean, geom="line", size=1,  aes(color=location)) +
     theme_bw()
@@ -83,7 +83,7 @@ deg.plotInteractionPlot_Multiple <- function(fitted, tests, topX=100, orderby="l
     print(p)
     
     if(save){
-      savePlot(p, 8, 6, filedir=deg.getResultDir(addSubdir=paste0("Visualization/test - ", sigTestRes@testId)), filename=paste0("Interaction Plot ",subtitle," - ", geneName))
+      savePlot(p, 8, 6, filedir=deg.getResultDir(addSubdir=paste0("Visualization/test - ", sigTestRes@contrast)), filename=paste0("Interaction Plot ",subtitle," - ", geneName))
     }
   }
   return(invisible(p))

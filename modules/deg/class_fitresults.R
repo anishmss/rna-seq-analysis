@@ -4,7 +4,7 @@ Class_FitResults <- setClass("Class_FitResults", slots = list(
 ))
 
 Class_SignifTest <- setClass("Class_SignifTest", slots = list(
-  testId = "character",
+  contrast = "character",
   df_degenes = "data.frame",
   res = "DESeqResults"
 ))

@@ -1,5 +1,7 @@
 library("pheatmap")
-qc.plotGene_Heatmap <- function(dseq_qc, topX=50, save=..saveImg_qc){
+qc.plotGene_Heatmap <- function(topX=50, save=..saveImg_qc){
+  dseq_qc <- qc.getDeseq()
+  
   # Heatmap of count matrix
   sortOrder <- order(rowMeans(assay(dseq_qc)),decreasing=TRUE)[1:topX]
   df <- data.frame(colData(dseq_qc)) %>%  select("condition","location")
@@ -16,5 +18,5 @@ qc.plotGene_Heatmap <- function(dseq_qc, topX=50, save=..saveImg_qc){
   print(p)
   if(save) savePlot(p, 10, 8, filedir=qc.getResultDir(), filename="Heatmap Read Counts")
   
-  return(invisible(dseq_qc))
+  return(invisible(p))
 }

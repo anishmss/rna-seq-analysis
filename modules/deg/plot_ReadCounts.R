@@ -1,6 +1,6 @@
 deg.plot_ReadCounts <- function(fitted, tests, labelFrom_df=NA, labelFrom_column=NA, topX = 20, orderby="padj", save=..saveImg_deg, returnPlot = FALSE){
   plots <- list()
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     plots[[length(plots)+1]] <- ..plot_ReadCounts(fitted, testId, labelFrom_df=labelFrom_df, labelFrom_column=labelFrom_column, topX = topX, orderby=orderby, save=save)
   }
   if(returnPlot) return(invisible(plots))
@@ -14,14 +14,15 @@ deg.plot_ReadCounts <- function(fitted, tests, labelFrom_df=NA, labelFrom_column
   }
   
   sigTestRes <- fitted@list_signifTest[[testId]]
+  dseq <- fitted@dseq
   df_degenes <- sigTestRes@df_degenes
   
-  data_plot <- getCounts_asDf(fitted@dseq, isNormalized = TRUE) %>% 
+  data_plot <- getCounts_asDf(dseq, isNormalized = TRUE) %>% 
     filter(gene_id %in% getTop_Geneids(df_degenes, topX, orderby)) %>%
-    select(c("gene_id", ..getSamplesOfInterest(colnames(.), testId))) %>%
+    select(c("gene_id", ..getSamplesRelatedToContrast(dseq, testId))) %>%
     gather(colnames(.)[-1], key="samplename", value="counts") %>% 
     mutate(logcounts = log(counts + 1, base=2)) %>% 
-    merge(., data.frame(colData(fitted@dseq)), by="samplename", all.x = TRUE)
+    merge(., data.frame(colData(dseq)), by="samplename", all.x = TRUE)
    
   p <- ggplot(data_plot) +
     geom_point(aes(x = gene_id, y = logcounts, color = condition, shape = condition, group = factor(condition)),
@@ -29,7 +30,7 @@ deg.plot_ReadCounts <- function(fitted, tests, labelFrom_df=NA, labelFrom_column
     # scale_y_log10() +
     xlab("Genes") +
     ylab("log2(counts + 1)") +
-    ggtitle(label=paste0("Top ", topX, " Significant DE Genes (by ",orderby,")"), subtitle = paste("Test :", sigTestRes@testId)) +
+    ggtitle(label=paste0("Top ", topX, " Significant DE Genes (by ",orderby,")"), subtitle = paste("Test :", sigTestRes@contrast)) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           plot.title = element_text(hjust = 0.5))

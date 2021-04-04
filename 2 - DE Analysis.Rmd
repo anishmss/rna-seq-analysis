@@ -1,0 +1,212 @@
+---
+title: "DGE Analysis"
+---
+
+```{r Load the filtered DESeq2 dataset saved from `1 - Explore and QC.Rmd`}
+loadDependencies()
+# load dseq here; or continue environment from `1 - Explore and QC.Rmd` notebook
+dseq <- readRDS("dseq.RDS")
+```
+
+
+#  NB model fitting W/ significance testing
+Full Model w/ Reference level CAG C
+Intercept + E + BIC + BAT + BIC.E + BAT.E
+
+H0 : There is no significant difference between (CAG_C - CAG_E) - (BAT_C - BAT_E)
+    E - (E + BAT.E) = 0
+    BAT.E = 0
+
+H0 : There is no significant difference between (CAG_C - CAG_E) - (BIC_C - BIC_E)
+    E - (E + BIC.E) = 0
+    BIC.E = 0
+    
+H0 : There is no significant difference between (BAT_C - BAT_E) - (BIC_C - BIC_E)
+    (E + BAT.E) - (E + BIC.E) = 0
+    BAT.E - BIC.E = 0
+    
+H0 : There is no significant difference between (CAG_C - CAG_E)
+    E = 0
+    
+H0 : There is no significant difference between (BAT_C - BAT_E)
+    E + BAT.E = 0
+    
+H0 : There is no significant difference between (BIC_C - BIC_E)
+    E + BIC.E = 0
+
+```{r Perform significance testing}
+mainEffects <- list(contrasts = c("E", "E + BAT.E", "E + BIC.E"),   
+                    plotLabels = c("CAG", "BAT", "BIC"))
+
+interEffects <- list(contrasts = c("BAT.E", "BIC.E", "BAT.E - BIC.E"),
+                     plotLabels = c("CAG vs BAT", "CAG vs BIC", "BAT vs BIC"))
+
+fitted <- deg.signifTest(dseq, contrasts = c(mainEffects[['contrasts']], interEffects[['contrasts']]), signif = 0.1)
+```
+
+```{r Export list of Differentially Expressed (DE) genes}
+deg.setSaveImg(TRUE)
+
+# Export degenes to CSV
+df_isDesc <- read.csv(getPath_fromProjWd("supplementary notebooks/results/Stress Reponse Genes (fly_acc)/geneID_isDescendant.csv"))
+
+listColumns <- c("fly", "fly_acc", "isDescendant")
+
+# Copied from "1 - Explore and QC.Rmd"
+#     better to store "file_annot", "annotSignif", and "alnLenThreshold" in a constants file
+file_annot <- "data/annotation.20200701.csv"
+df_annot.orig <- read.csv(file_annot, stringsAsFactors = FALSE)
+annotSignif <- 1e-10
+alnLenThreshold <- 50
+df_annot <- df_annot.orig %>% filter(fly_stat_sig < annotSignif & fly_len_perc >= alnLenThreshold)
+df_annot_uniq <- df_annot %>% distinct(gene_id, .keep_all = TRUE)
+
+
+deg.exportDEGenes(fitted, merge(df_annot_uniq, df_isDesc, by="gene_id", all.x = TRUE), 
+                  extractCols = listColumns, outDirSuffix = " (unique)")
+
+deg.exportDEGenes(fitted, merge(df_annot, df_isDesc, by="gene_id", all.x = TRUE), 
+                  extractCols = listColumns, outDirSuffix = " (w duplicates)")
+```
+
+```{r Graph results from Main effects testing}
+# Main Effects 
+fitted %>% 
+    deg.plot_ReadCounts(mainEffects, labelFrom_df = df_annot_uniq, labelFrom_column = "fly") %>% 
+    deg.plot_VennDiagram2(mainEffects, subtitle = " (Main Effect)") %>% 
+    deg.plot_BarGraph(mainEffects) %>% 
+    deg.plot_MA(mainEffects, df_isDesc)
+```
+
+```{r  Graph results from Interaction effects testing}
+# Interaction Effects
+fitted %>% 
+  deg.plot_VennDiagram2(interEffects, subtitle = " (Interaction Effect)") %>%
+  deg.plotInter_CategoryTable(interEffects) %>% 
+  deg.plotInter_Heatmap(interEffects, df_isDesc = df_isDesc) %>% 
+  deg.plotInter_LfcDifference(interEffects)
+
+deg.plotInteractionPlot_Multiple(fitted, interEffects, orderby = "lfc", 
+                                 labelFrom_df = df_annot, labelFrom_column = "fly_acc",
+                                 df_isDesc = df_isDesc)
+
+# deg.plotInteractionPlot_Multiple(fitted, interEffects, orderby = "padj",
+#                                  labelFrom_df = df_annot, labelFrom_column = "fly_acc",
+#                                  f_isDesc = df_isDesc)
+```
+
+```{r Combine plots for publication (Figure 6)}
+# Figure 6 - Bar Graph and MA plots of the 3 main effects
+deg.setSaveImg(FALSE)
+p1 <- deg.plot_VennDiagram2(fitted, mainEffects, scale = 0.6, returnPlot = TRUE)
+p2 <- deg.plot_BarGraph(fitted, mainEffects, returnPlot = TRUE)
+p3 <- deg.plot_MA(fitted, mainEffects, df_isDesc = df_isDesc, returnPlot = TRUE)
+
+# Increase font size in Bar Graph 
+p2 <- p2 + theme(legend.text = element_text(size=12), axis.text.y = element_text(size=12))
+
+# Create shared legend, X axis title, and Y axis title for the 3 MA plots
+p3_legend <- get_legend(p3[[1]] + 
+                        theme(legend.text = element_text(size=12), legend.position = "bottom") +
+                        guides(color=guide_legend(reverse=TRUE, nrow = 1, override.aes=list(size=4))))
+# p3_axisTitle_X <- textGrob(p3[[1]]$labels$x, gp=gpar(fontsize=14))
+# p3_axisTitle_Y <- textGrob(p3[[1]]$labels$y, gp=gpar(fontsize=14), rot=90)
+
+# Remove legends for each individual MA plot
+p3_temp <- list()
+for(i in 1:length(p3)){
+  p3_temp[[i]] <- p3[[i]] + 
+    labs(subtitle = mainEffects[['labels']][[i]],  title= "") +
+    theme(legend.position = "None",
+          plot.subtitle = element_text(hjust=0.5))
+  # if(i != 1){
+  #   p3_temp[[i]] <- p3_temp[[i]] + theme(axis.title = element_blank())
+  # }
+}
+p3_noLegend <- plot_grid(p3_temp[[2]],p3_temp[[3]],  nrow = 1, labels=c("(c)","(d)"))
+
+# Arrange plots into rows
+# plot_ab <- plot_grid(p1, p2, nrow = 1, labels=c("(a)", "(b)"))
+
+# Combine all plots into one
+# combinedPlot <- plot_grid(plot_ab,NULL,plot_cde,
+#                           ncol=1, rel_heights = c(0.3, 0.05, 0.6))
+
+combinedPlot <- plot_grid(p2 + theme(legend.position = "top", legend.title = element_blank()), 
+                          p3_temp[[1]], p3_temp[[2]],p3_temp[[3]], 
+                          ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"))
+
+combinedPlot2 <- plot_grid(combinedPlot, p3_legend, ncol = 1, rel_heights = c(1, .1))
+
+savePlot(combinedPlot2, width=7, height=7,
+         filedir = deg.getResultDir("Visualization/Combined"),
+         filename = "Figure - Main Effects")
+```
+
+```{r Combine plots for publication (Figure 7)}
+# Figure 7 - Interaction Effects
+deg.setSaveImg(FALSE)
+interEffects <- list(contrasts = c("BAT.E", "BIC.E"),
+                     plotLabels = c("CAG vs BAT", "CAG vs BIC"))
+
+df_isDesc <- read.csv(getPath_fromProjWd("supplementary notebooks/results/Stress Reponse Genes (fly_acc)/geneID_isDescendant.csv"))
+# p1 <- deg.plot_VennDiagram2(fitted, interEffects, padding = 0.2, scale=0.8, label_textSize = 6, returnPlot = TRUE)
+# p2 <- deg.plotInter_CategoryTable(fitted, interEffects, returnPlot = TRUE)
+p3 <- deg.plotInter_Heatmap(fitted, interEffects, df_isDesc=df_isDesc, returnPlot = TRUE)
+
+# Convert ComplexHeatmap to grob
+p3_grob <- lapply(p3, function(x){ 
+                grid.grabExpr(draw(x, annotation_legend_side="top"))
+              })
+
+# Arrange plots into rows
+# plot_ab <- plot_grid(p1, p2, nrow = 1, labels=c("(a)", "(b)"))
+# plot_cd <- plot_grid(NULL, p3_grob[[1]],NULL, p3_grob[[2]], NULL, nrow=1, labels=c("","(c)","","(d)",""), label_x = -0.03, rel_widths = c(0.1,0.35,0.1,0.35,0.1))
+plot_ab <- plot_grid(p3_grob[[1]], NULL, p3_grob[[2]], nrow=1, labels=c("(a)", "", "(b)"), rel_widths = c(.49, .01, .49))
+
+# Combine plots into one
+# combinedPlot <- plot_grid(plot_ab, NULL, plot_cd, ncol=1, rel_heights = c(1,0.1, 2.2))
+savePlot(plot_ab, width = 13, height = 6,
+         filedir = deg.getResultDir("Visualization/Combined"), 
+         filename = "Figure - Interaction Effects")
+```
+
+```{r Plot figure of Top 20 read counts}
+deg.setSaveImg(FALSE)
+p <- deg.plot_ReadCounts(fitted, mainEffects, labelFrom_df = df_annot_uniq,
+                         labelFrom_column = "fly_acc", returnPlot = TRUE)
+
+p_title <- textGrob(p[[1]]$labels$title, gp=gpar(fontsize=16))
+
+# Create a shared legend, axis title X and Y
+p_axisTitle_X <- textGrob(p[[1]]$labels$x, gp=gpar(fontsize=10))
+p_axisTitle_Y <- textGrob(p[[1]]$labels$y, gp=gpar(fontsize=10),rot = 90)
+p_legend <- get_legend(p[[1]] + 
+                         theme(legend.position="bottom", legend.text = element_text(size=14)) + 
+                         guides(color=guide_legend(nrow = 1)))
+
+# Remove individual legends
+p_temp <- list()
+for(i in 1:length(p)){
+  p_temp[[i]] <- p[[i]] + theme(legend.position="None", 
+                                plot.subtitle = element_text(hjust = 0.5, size = 14), 
+                                axis.title = element_blank(), 
+                                axis.text.x = element_text(size=8)) + 
+                          labs(subtitle=mainEffects[['labels']][[i]], title="")
+}
+
+# Combine axis title X and Y to all the plots
+plot_abc <- arrangeGrob(plot_grid(p_temp[[1]], p_temp[[2]], p_temp[[3]], nrow=1), 
+                                      left = p_axisTitle_Y, bottom = p_axisTitle_X, top = p_title)
+
+# Then, combine the legend
+combinedPlot <- plot_grid(plot_abc, p_legend, ncol=1, rel_heights = c(0.9, 0.1))
+savePlot(combinedPlot, width = 10, height = 5,
+         filedir = deg.getResultDir("Visualization/Combined"),
+         filename = "Figure - Read Counts")
+```
+
+
+
+
+

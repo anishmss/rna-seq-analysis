@@ -1,0 +1,70 @@
+---
+title: "Mudcrabs DGE Analysis"
+---
+Main references :   
+1. http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html  
+2. https://github.com/hbctraining/DGE_workshop/tree/master/lessons  
+
+First time setup:
+```
+install.packages("renv")   # Step 1: In R console, please install `renv` package
+
+                           # Step 2: Open .Rproj, or if already open, restart R session
+
+renv::restore()            # Step 3: Run this
+```
+
+```{r Prepare DESeq2 dataset using txImport, message=FALSE}
+loadDependencies()
+dir_counts <- "data/counts_per_sample"
+
+# Prepare Sample Info (or can be prepared in a csv and be loaded; useful for exploring in other notebooks)
+filenames <- list.files(dir_counts)
+samplename <- gsub(".genes.results", "", filenames)
+df_sampleInfo <- data.frame(samplename) %>% 
+                    separate(samplename, sep="_", into = c("location", "condition", "replicate"), remove=FALSE) %>%
+                    mutate_if(is.character,as.factor) %>% 
+                    mutate(location = relevel(location, "CAG"),  # Set CAG and C as reference levels
+                           condition = relevel(condition, "C"))
+
+dseq_orig <- rsem2Deseq(dir_counts, df_sampleInfo, "~location + condition + location*condition", txIn = FALSE)
+```
+
+```{r Filter Genes and Samples}
+file_annot <- "data/annotation.20200701.csv"
+df_annot.orig <- read.csv(file_annot, stringsAsFactors = FALSE)
+annotSignif <- 1e-10
+alnLenThreshold <- 50
+removeSamples <- c("BAT_E_2", "CAG_C_3", "CAG_E_1", "BIC_C_3")
+
+df_annot <- df_annot.orig %>% filter(fly_stat_sig < annotSignif & fly_len_perc >= alnLenThreshold )
+
+dseq <- filter.genes(dseq_orig, keep_geneIds = df_annot$gene_id) %>%
+        filter.samples(removeSamples = removeSamples)
+
+filter.printSummary(dseq)
+plotGene_Distribution(dseq, saveImg = TRUE)
+```
+```{r (optional) Save parameters of this experiment}
+# When done filtering, save the parameters and their values
+# Useful for comparing and looking back previous results
+saveParameters("params_filter.txt", file_annot, annotSignif, alnLenThreshold, removeSamples)
+```
+
+```{r Quality Check}
+dseq_qc <- qc.normalize(dseq)
+
+qc.setSaveImg(TRUE)
+
+qc.plotSample_ClusterHeatmap()
+qc.plotSample_ClusterDendrograms()
+qc.plotSample_PCA()
+qc.plotGene_Heatmap()
+qc.plotGene_MeanSD()
+```
+
+```{r Save filtered DESeq2 object to be loaded in `2 - DE Analysis.Rmd`}
+# save deseq object here to be loaded in next notebook, or just keep `dseq` variable in environment.
+saveRDS(dseq, "dseq.RDS")
+```
+

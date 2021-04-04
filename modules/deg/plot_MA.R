@@ -3,8 +3,8 @@ deg.plot_MA <- function(fitted, tests, df_isDesc=NA, save = ..saveImg_deg, retur
   
   y_max <- max(sapply(fitted@list_signifTest, function(x) quantile(abs(x@res$log2FoldChange), probs=0.995)[[1]]))
   
-  for(i in 1:length(tests[['testIDs']])){
-    plots[[length(plots)+1]] <- ..deg.plotMA_wDesc(fitted, tests[['testIDs']][i], tests[['labels']][i], df_isDesc=df_isDesc, y_max=y_max, save=save)      
+  for(i in 1:length(tests[['contrasts']])){
+    plots[[length(plots)+1]] <- ..deg.plotMA_wDesc(fitted, tests[['contrasts']][i], tests[['plotLabels']][i], df_isDesc=df_isDesc, y_max=y_max, save=save)      
   }
   if(returnPlot) return(invisible(plots))
   return(invisible(fitted))
@@ -13,7 +13,7 @@ deg.plot_MA <- function(fitted, tests, df_isDesc=NA, save = ..saveImg_deg, retur
 ..deg.plotMA_wDesc <- function(fitted, testId, mainEffLabel, df_isDesc=NA, y_max = NA, save=..saveImg_deg){
   res <- fitted@list_signifTest[[testId]]@res
   if(all(is.na(df_isDesc))){
-    df_isDesc <- data.frame(gene_id=row.names(res), isDescendant=FALSE)    
+    df_isDesc <- data.frame(genes=row.names(res), isDescendant=FALSE)    
   } 
   
   plotData <- geneplotter::plotMA(res, returnData=TRUE) %>% 

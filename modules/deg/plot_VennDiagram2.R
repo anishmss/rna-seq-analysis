@@ -9,13 +9,13 @@ deg.plot_VennDiagram2 <- function(fitted, tests, subtitle="", save = ..saveImg_d
   require(limma)
   
   df_genes <- rowData(fitted@dseq) %>% data.frame() %>%  rownames_to_column("gene_id") %>% select("gene_id")
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     df_genes[[testId]] <- df_genes$gene_id %in% fitted@list_signifTest[[testId]]@df_degenes[['gene_id']]
   }
   m_genes <- vennCounts(df_genes[,-1])
   class(m_genes)  <- "matrix"
   
-  .g(df_counts, df_labels, df_shapes, circleFillColor) %=% ..getVennAxes(m_genes,tests, padding, length(tests[['testIDs']]))
+  .g(df_counts, df_labels, df_shapes, circleFillColor) %=% ..getVennAxes(m_genes,tests, padding, length(tests[['contrasts']]))
   
   p <- ggplot(df_shapes) +
     geom_circle(aes(x0 = x, y0 = y, r = 1.5, fill = labels), alpha = .5, size = 1) +
@@ -48,11 +48,11 @@ deg.plot_VennDiagram2 <- function(fitted, tests, subtitle="", save = ..saveImg_d
     
     df_labels <- data.frame(x=c(-1.33,1.33),
                             y=c(-1.5-padding, -1.5-padding),
-                            label = tests[['labels']])
+                            label = tests[['plotLabels']])
     
     df_shapes <- data.frame(x = c(0.866, -0.866),
                             y = c(0, 0),
-                            labels = tests[['testIDs']])
+                            labels = tests[['contrasts']])
     circleFillColor <- c("gray50","gray100")
     
   }else if(circles == 3){
@@ -63,11 +63,11 @@ deg.plot_VennDiagram2 <- function(fitted, tests, subtitle="", save = ..saveImg_d
     
     df_labels <- data.frame(x=c(0, -2.7-padding,2.7+padding),
                             y=c(2.8, -0.6-padding,-0.6-padding),
-                            label = tests[['labels']])
+                            label = tests[['plotLabels']])
     
     df_shapes <- data.frame(x = c(0, 0.866, -0.866),
                             y = c(1, -0.5, -0.5),
-                            labels = tests[['testIDs']])
+                            labels = tests[['contrasts']])
     circleFillColor <- c("gray5","gray50","gray100")
   }else{
     stop('plot_VennDiagram2 can only plot 2-3 intersections')

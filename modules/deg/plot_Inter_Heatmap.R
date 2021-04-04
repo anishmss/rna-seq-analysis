@@ -3,11 +3,11 @@ deg.plotInter_Heatmap <- function(fitted, tests, transformMethod="vst", dseq_qc 
   if(!all(is.na(dseq_qc))){
     df_counts <- getCounts_asDf(dseq_qc)
   }else{
-    df_counts <- getCounts_asDf(qcPrepare(fitted@dseq, method=transformMethod))
+    df_counts <- getCounts_asDf(qc.normalize(fitted@dseq, method=transformMethod))
   }
   
   list_plots <- list()
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     p <- ..plotInter_Heatmap(fitted, testId, df_counts, df_isDesc=df_isDesc, save = save)
     list_plots[[length(list_plots)+1]] <- p
   }
@@ -24,7 +24,7 @@ deg.plotInter_Heatmap <- function(fitted, tests, transformMethod="vst", dseq_qc 
   
   df_counts <- df_counts %>%
     filter(gene_id %in% df_degenes[["gene_id"]]) %>%
-    select(c("gene_id", ..getSamplesOfInterest(dseq$samplename, testId))) %>% 
+    select(c("gene_id", ..getSamplesRelatedToContrast(fitted@dseq, testId))) %>% 
     merge(., select(df_degenes, gene_id, category), by="gene_id") %>% 
     arrange(category)
   

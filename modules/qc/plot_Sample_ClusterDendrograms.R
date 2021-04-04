@@ -1,4 +1,6 @@
-qc.plotSample_ClusterDendrograms <- function(dseq_qc, save=FALSE){
+qc.plotSample_ClusterDendrograms <- function(save=..saveImg_qc){
+  dseq_qc <- qc.getDeseq()
+  
   require(ggdendro)
   
   distances <- ..getCorrelationMatrix(getCounts(dseq_qc))
@@ -21,5 +23,5 @@ qc.plotSample_ClusterDendrograms <- function(dseq_qc, save=FALSE){
   print(p)
   if(save) savePlot(p, 6, 6, filedir=qc.getResultDir(), filename="Cluster Dendrogram")
   
-  invisible(dseq_qc)
+  invisible(p)
 }

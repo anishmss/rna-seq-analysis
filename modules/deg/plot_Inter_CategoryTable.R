@@ -1,9 +1,9 @@
 deg.plotInter_CategoryTable <- function(fitted, tests, save=..saveImg_deg, returnPlot = FALSE){
   cnt_categories <- c()
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     df_degenes <- fitted@list_signifTest[[testId]]@df_degenes
     if(!"category" %in% colnames(df_degenes)){
-      fitted <- deg.addColumn_InterCategory(fitted, tests[['testIDs']])
+      fitted <- deg.addColumn_InterCategory(fitted, tests[['contrasts']])
     }
     
     cnt <- fitted@list_signifTest[[testId]]@df_degenes %>% 
@@ -15,7 +15,7 @@ deg.plotInter_CategoryTable <- function(fitted, tests, save=..saveImg_deg, retur
   df_cntCategory <- matrix(cnt_categories, byrow = TRUE, ncol = 6) %>% 
     data.frame() %>% 
     setNames(..category_order) %>% 
-    mutate(label = tests[['labels']]) %>% 
+    mutate(label = tests[['plotLabels']]) %>% 
     column_to_rownames("label")
   
   require(grid)

@@ -71,7 +71,7 @@ The output contains many files, which we have summarized as a data-frame require
 
 
 # Differential expression analysis
-Differential expression analysis can be performed using the R Markdown notebook Main.Rmd.
+Differential expression analysis can be performed using the R Markdown notebooks \`1 - Explore and QC.Rmd\` and \`2 - DE Analysis.Rmd\`.
 
 ## Software requirement
 The following steps were executed on RStudio (v.1.2.5042) and R (v. 4.0.3). 
@@ -107,29 +107,69 @@ Place the following files in a `data` folder:
     Generated from "supplementary notebooks/GO_stressResponse.Rmd". View [below](###GO_stressResponse.Rmd) for more details.
     
 
-### DEG workflow functions
-1. Filtering
-	* `filter.gene(dseq, df_filter)`
-	* `filter.samples(dseq, removeSamples)`
-	* `filter.printSummary(dseq)` 
-2. QC
-	* **Transform dseq to be homoskedastic** - `qcPrepare(dseq)`
-	* **Saving QC plot outputs** - set `
-qc.setSaveImg(TRUE)`, plots will be saved in _results/QC/QC (%timestamp%)_. To create directory in new timestamp, call `setTimestampNow()`.
-	* **QC plots** 
-		* `qc.plotGene_MeanSD()` - Diagnostic plot to check homoskedasticity of transformed data
-		* `qc.plotGene_Heatmap()`
-      * `qc.plotSample_ClusterHeatmap()`
-      * `qc.plotSample_ClusterDendrograms()` - Same as the dendrograms of the clusters shown in the heatmap
-      * `qc.plotSample_PCA()`
-3. DEG
-	* **Saving DEG plot outputs** - set `
-deg.setSaveImg(TRUE)`, plots will be saved in _results/DE/DE (%timestamp%)_. To create directory in new timestamp, call `setTimestampNow()`.
-	* **DEG plots** 
-	* (Under construction)
-	* (Where did testID come from?, what is its format?)
-	* (How to perform signif test?)
+### DEG workflow
 
+Run notebook \`**1 - Explore and QC.Rmd**\` for exploring data and perform quality checking
+
+-   Chunk 1 : Prepare DESeq dataset using txImport
+
+    -   Reads count data produced by Trinity as a DESeq2 dataset
+
+-   Chunk 2 : Filter Genes and Samples
+
+    -   Removes outlier samples
+
+    -   Removes genes with low annotation significance and alignment
+
+-   Chunk 3 : (optional) Save parameters of this experiment
+
+-   Chunk 4 : Quality Check
+
+    -   Graphs sample cluster with heatmap
+
+    -   Graphs sample cluster dendrogram
+
+    -   Graphs sample PCA plot
+
+    -   Graphs gene heatmap
+
+    -   Graphs Mean SD plot (for checking if variance is dependent on the mean)
+
+-   Chunk 5 : Save filtered DESEq2 object to be loaded in \`2 - DE Analysis.Rmd\`
+
+Run notebook \`**2 - DE Analysis.Rmd**\` for performing significance testing and graphing
+
+-   Chunk 1 : Load the filtered DESeq2 dataset saved from \`1 - Explore and QC.Rmd\`
+
+-   Chunk 2 : Perform significance testing
+
+-   Chunk 3 : Export list of Differentially Expressed (DE) genes
+
+-   Chunk 4 : Graph results from Main effects (the 3 sites: "CAG", "BAT", "BIC") testing
+
+    -   Graphs expression of top most significant DE genes for each site
+
+    -   Graphs venn diagram of the DE genes across the 3 site
+
+    -   Graphs bar graph of DE gene counts for each site
+
+    -   Graphs MA plot for each site
+
+-   Chunk 5 : Graph results from Interaction effects testing
+
+    -   Graphs venn diagram of intersecting DDE genes
+
+    -   Graphs a count table of the interaction category for each site
+
+    -   Graphs gene heatmaps of CAG vs BAT and CAG vs BIC
+
+    -   Graphs interaction plots for each site
+
+-   Chunk 6 : Combine plots for publication (Figure 7)
+
+-   Chunk 7 : Combine plots for publication (Figure 8)
+
+-   Chunk 8 : Plot figure of Top 20 read counts
 
 # Supplementary Notebooks
 ### GO_stressResponse.Rmd

@@ -1,6 +1,6 @@
 deg.plotInter_LfcDifference <- function(fitted, tests, topX = 10, save=..saveImg_deg, returnPlot = FALSE){
   plots <- list()
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     plots[[length(plots) + 1]] <- ..plotInter_LfcDifference(fitted, testId, topX, save)
   }
   
@@ -13,20 +13,21 @@ deg.plotInter_LfcDifference <- function(fitted, tests, topX = 10, save=..saveImg
     fitted <- deg.addColumn_InterCategory(fitted, testId)
   }
   df_degenes <- fitted@list_signifTest[[testId]]@df_degenes
+  dseq <- fitted@dseq
   
   df_interactionCtg <- df_degenes %>%
     mutate(difference = abs(lhs-rhs)) %>%
     group_by(category) %>%
     arrange(desc(difference)) %>%
     mutate(gene_id = factor(gene_id, levels=gene_id)) %>%    # levels tell ggplot not to sort gene_id's alphabetically, 
-                                                             # but retain the original sort by descending `difference` 
+                                                       # but retain the original sort by descending `difference` 
     slice_head(n = topX) %>% 
     select(gene_id, lhs, rhs, category) %>%
     pivot_longer(cols = c("lhs", "rhs"), names_to="side", values_to="lfc", names_transform = list(side = as.factor))
   
   color_location <- brewer.pal(name="Dark2", n=3)
   color_location <- c("BAT" = color_location[1], "BIC" = color_location[2], "CAG" = color_location[3])
-  locationsOfInterest <- unlist(..getInteractionGroups(testId))
+  locationsOfInterest <- unlist(..getLevelsFromContrast(dseq, testId))
   
   p <- ggplot(df_interactionCtg, aes(x = gene_id, y = lfc)) +
     geom_line(linetype="dashed", color="gray") +

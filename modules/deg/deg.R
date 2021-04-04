@@ -1,50 +1,51 @@
+..category_order <- c("Uu", "uU", "Dd", "dD", "UD", "DU")
+..dseq_deg <- NULL
 ..signif <- 0.1
 
-deg.signifTest <- function(dseq, testIds, signif = ..signif, verbose = TRUE){
+deg.signifTest <- function(dseq, contrasts, signif = ..signif, verbose = TRUE){
   #' Performs multiple adjustment across contrasts and genes
   #'
   #' @param dseq_fitted A DESeq object (can already be fitted or not)
-  #' @param testIds character vector. specified in mappedCoefficients
+  #' @param contrasts character vector. specified in mappedCoefficients
   #' @param signif numerical. significance threshold
   #' @param verbose logical. If TRUE, then prints the summary for each test.
   #' 
   dseq <- DESeq(dseq)
   list_signifTest <- list()
-  for(testId in testIds){
-    list_signifTest[[testId]] <- ..signifTest_single(dseq , testId, signif)
+  for(contrast in contrasts){
+    list_signifTest[[contrast]] <- ..signifTest_single(dseq , contrast, signif)
   }
   
   list_signifTest <- ..adjustPvals_acrossContrasts(list_signifTest, signif, verbose = verbose)
-  
-  
+
   fitResults <- Class_FitResults(dseq = dseq, list_signifTest = list_signifTest)
   invisible(fitResults)
 }
 
-..signifTest_single <- function(dseq, testId, signif = ..signif){
-  .g(coeffName, testContrast) %=% getTestContrast(dseq, testId)
+..signifTest_single <- function(dseq, contrast, signif = ..signif){
+  .g(coeffName, testContrast) %=% getTestContrast(dseq, contrast)
   
   res <- results(dseq, alpha = signif, contrast=testContrast)
-  resShrunk <- lfcShrink(dseq, res=res, type = "ashr", quiet = TRUE) #the default type="apeglm" does not allow use of contrast
+  resShrunk <- lfcShrink(dseq, res=res, type = "ashr", quiet = TRUE) # The default type="apeglm" does not allow use of contrast
   
-  sigTestRes <- Class_SignifTest(testId = testId, res = resShrunk)
+  sigTestRes <- Class_SignifTest(contrast = contrast, res = resShrunk)
   return(sigTestRes)
 }
 
-getTestContrast <- function(dseq, testId){
+getTestContrast <- function(dseq, contrast){
   # input       => output
   # "BAT-BIC"   => list(c("locationBAT", "locationBIC"), c(0,1,-1,0,0,0))
   # "BAT+BAT.E" => list(c("locationBAT", "locationBAT.conditionE"), c(0,1,0,0,1,0))
   # "BAT"       => list("locationBAT", list("locationBAT"))
   
-  testId_vector <-strsplit(gsub(" ", "", testId), "\\+|\\-", perl = TRUE)[[1]]
-  coeffName <- sapply(X= testId_vector, FUN = ..getCoeffName_frTestID, USE.NAMES = FALSE)
+  contrast_vector <-strsplit(gsub(" ", "", contrast), "\\+|\\-", perl = TRUE)[[1]]
+  coeffName <- sapply(X= contrast_vector, FUN = function(x) {..getFullCoeffName(dseq, x)}, USE.NAMES = FALSE)
   
   testContrast <- rep(0, length(resultsNames(dseq)))   # initialize test contrast to c(0,0,0,0,0,0)
   indexCoeffs <- match(coeffName, resultsNames(dseq))
   testContrast[indexCoeffs] <- 1
   
-  if(grepl("-", testId, fixed = TRUE)){  # if testId contains minus sign, set coefficient to -1
+  if(grepl("-", contrast, fixed = TRUE)){  # if contrast contains minus sign, set coefficient to -1
     testContrast[indexCoeffs[2]] <- -1
   }
   
@@ -93,7 +94,7 @@ getTestContrast <- function(dseq, testId){
     
     if(verbose){
       cnt_degenes <- sum(sigTestRes@res$padj < signif, na.rm = TRUE)
-      writeLines(paste("\nResult of [",sigTestRes@testId,"]"))
+      writeLines(paste("\nResult of [",sigTestRes@contrast,"]"))
       writeLines(paste0("Signif. DE genes : ", cnt_degenes))
       summary(sigTestRes@res)
     }

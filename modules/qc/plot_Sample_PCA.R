@@ -1,5 +1,8 @@
-qc.plotSample_PCA <- function(dseq_qc, factors, showSamplenames=TRUE, save=..saveImg_qc, returnPlot=FALSE){  
-  require(ggrepel)
+require(ggrepel)
+
+qc.plotSample_PCA <- function(factors = qc.getDesignFactors(), showSamplenames=TRUE, save=..saveImg_qc, returnPlot=FALSE){  
+  dseq_qc <- qc.getDeseq()
+  
   pcaData <- plotPCA(dseq_qc, intgroup=factors, ntop = length(dseq_qc), returnData=TRUE)
 
   if(length(factors) == 2){
@@ -44,7 +47,7 @@ qc.plotSample_PCA <- function(dseq_qc, factors, showSamplenames=TRUE, save=..sav
     if(showSamplenames) return(p_labeled)
     return(p)
   }
-  return(invisible(dseq_qc))
+  return(invisible(p))
 }
 
 ..pcaData_toGGplot <- function(pcaData){

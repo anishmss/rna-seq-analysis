@@ -1,6 +1,6 @@
-# For plotting other PCs
+# For plotting PCAs with a GUI tool
 # BiocManager::install("pcaExplorer")
 
-plotPCA_Sample_Interactive <- function(dseq_qc, dseq_filtered){
-  pcaExplorer(dseq_filtered, dseq_qc)
+plotPCA_Sample_Interactive <- function(dseq_filtered){
+  pcaExplorer::pcaExplorer(dseq_filtered, qc.getDeseq())
 }

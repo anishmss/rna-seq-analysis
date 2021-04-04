@@ -1,13 +1,12 @@
-filter.genes <- function(dseq, df_filter){
-  keep_geneIds <- df_filter[['gene_id']] %>% unique()
-  dseq_filtered <- dseq[which(row.names(assay(dseq)) %in% keep_geneIds), ]
-  return(dseq_filtered)
+filter.genes <- function(dseq, keep_geneIds){
+  dseq_filtered <- dseq[which(row.names(assay(dseq)) %in% unique(keep_geneIds)), ]
+  return(invisible(dseq_filtered))
 }
 
 filter.samples <- function(dseq, removeSamples){
   dseq <- dseq[, !(dseq[['samplename']] %in% removeSamples)]
   dseq[['samplename']] <- droplevels(dseq[['samplename']])
-  return(dseq)
+  return(invisible(dseq))
 }
 
 filter.group <- function(dseq, removeLevel, fromFactor){
@@ -17,7 +16,7 @@ filter.group <- function(dseq, removeLevel, fromFactor){
       dseq[[column]] <- droplevels(dseq[[column]])
     }
   }
-  return(dseq)
+  return(invisible(dseq))
 }
 
 filter.printSummary <- function(dseq){
@@ -26,8 +25,10 @@ filter.printSummary <- function(dseq){
   
   writeLines("\nSample group counts:")
   cnttable <- data.frame(colData(dseq)) %>% 
-                select("location", "condition") %>% 
-                table() %>% addmargins()
+    select("location", "condition") %>% 
+    table() %>% 
+    addmargins()
   print(cnttable)
-  invisible(dseq)
+  
+  return(invisible())
 }

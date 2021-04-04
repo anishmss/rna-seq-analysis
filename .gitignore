@@ -4,6 +4,8 @@
 .Ruserdata
 .idea/*
 
+*.RDS
+
 main.nb.html
 results/*
 data/*

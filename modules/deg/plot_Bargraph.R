@@ -1,14 +1,14 @@
 deg.plot_BarGraph <- function(fitted, tests, save = ..saveImg_deg, returnPlot = FALSE){
   counts <- c()
-  for(testId in tests[['testIDs']]){
+  for(testId in tests[['contrasts']]){
     direction <- fitted@list_signifTest[[testId]]@df_degenes %>% 
       mutate(direction = as.factor(ifelse(log2FoldChange > 0, "up", "down"))) %>% 
       pull(direction)
     counts <- c(counts, sum(direction=="up"), sum(direction=="down"))
   }
   
-  df_counts <- data.frame(labels = factor(rep(tests[['labels']], each=2), levels=rev(tests[['labels']])), 
-                          direction = rep(c("up-regulated", "down-regulated"), length(tests[['testIDs']])),
+  df_counts <- data.frame(labels = factor(rep(tests[['plotLabels']], each=2), levels=rev(tests[['plotLabels']])), 
+                          direction = rep(c("up-regulated", "down-regulated"), length(tests[['contrasts']])),
                           counts = counts, 
                           stringsAsFactors = TRUE)
   

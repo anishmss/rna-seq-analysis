@@ -1,43 +1,54 @@
-plotGene_Distribution <- function(dseq, normalized = TRUE, save = FALSE){
+..getDf_plotGene_Distribution <- function(dseq){
   require(reshape2)
-  require(gridExtra)
-  if(normalized){
-    readCountType <- "normalized"    
-    dseq <- estimateSizeFactors(dseq)
-  }else{
-    readCountType <- "raw"    
-  }
-  temp_data <- getCounts_asDf(dseq, isNormalized = normalized) %>% column_to_rownames("gene_id")
-  temp_data <- as.matrix(log(temp_data + 1, base = 2))
   
-  temp_df <- melt(temp_data)
-  df <- data.frame(temp_df, Location = substr(temp_df$Var2, 1, 3), Condition = substr(temp_df$Var2, 5,5))
-  df$samplegrp <- substr(df$Var2, 1,5)
+  counts <- getCounts_asDf(estimateSizeFactors(dseq), isNormalized = TRUE) %>% 
+            column_to_rownames("gene_id") 
+  
+  df_plotData <- as.matrix(log(counts + 1, base = 2)) %>% 
+                 melt(varnames = c("gene_id", "samplename"), value.name = "count") %>% 
+                 merge(dseq@colData) %>% 
+                 data.frame() %>% 
+                 unite(col = "group", all.vars(dseq@design), sep = "_", remove = FALSE)
+  
+  # Columns produced for plotting
+  #   samplename  : Factor w/ 25 levels "BAT_C_1","BAT_C_2",..: 
+  #   gene_id       : Factor w/ 6898 levels "TRINITY_DN10022_c0_g1",..:
+  #   count       : num    9.42 5.07 9.1 7.67 6 ...
+  #   group       : chr    "BAT_C" "BAT_C" "BAT_C" "BAT_C" ...
+  #   <factor_1>  : Factor w/ 3 levels "CAG","BAT","BIC": 
+  #   <factor_2>  : Factor w/ 2 levels "C","E": 
+  
+  return(df_plotData)
+}
+
+plotGene_Distribution <- function(dseq, saveImg = FALSE){
+  df_plotData <- ..getDf_plotGene_Distribution(dseq)
+  factors <- all.vars(dseq@design)
   
   # Graph 1 : Boxplot
-  p <-ggplot(df, aes(x = Var2, y = value, fill = Condition)) + geom_boxplot() + xlab("") +
-    ylab(paste0("log2(",readCountType," read counts + 1)")) +
-    facet_wrap(~ samplegrp,nrow=1, scale="free") +
-    ylim(min(df$value),max(df$value)) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    ggtitle(label="Distribution of Read Counts")
+  p <- ggplot(df_plotData, aes_string(x = "samplename", y = "count", fill = factors[[1]])) + 
+    geom_boxplot() + 
+    facet_wrap(~group,nrow=1, scale="free") +
+    labs(x = "", y = "log2(normalized read counts + 1)", title = "Distribution of Read Counts") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
   
   # Graph 2 : Density
-  p2 <- ggplot(df, aes(x = value, colour = Var2, fill = Var2)) +
+  p2 <- ggplot(df_plotData, aes(x = count, colour = samplename, fill = samplename)) +
     geom_density(alpha = 0.2, size = 1.25) + 
-    facet_wrap(~ samplegrp, nrow=1) +
-    theme(legend.position = "none") + xlab(paste0("log2(",readCountType," read counts+1)")) +
-    ggtitle(label="Distribution of Read Counts") 
-  
-  
-  #gp <- grid.arrange(p, p2, ncol = 2,respect=TRUE) 
-  #gp <- plot_grid(p,p2,ncol=2)
+    facet_wrap(~group, nrow=1) +
+    labs(x = "log2(normalized read counts+1)", title ="Distribution of Read Counts") +
+    theme(legend.position = "none") 
   
   print(p)
   print(p2)
   if(saveImg){
-     savePlot(p, 10, 7, filedir=qc.getResultDir(), filename="Box Plot of Read Counts")
-     savePlot(p2, 10, 7, filedir=qc.getResultDir(), filename="Density Plot of Read Counts")
+     savePlot(p, 12, 7, filedir=qc.getResultDir(), filename="Box Plot of Read Counts")
+     savePlot(p2, 12, 7, filedir=qc.getResultDir(), filename="Density Plot of Read Counts")
   }
-  invisible(dseq)
+  
+  # Returns a list of plots 
+  invisible(
+    list(p_boxplot = p, 
+         p_density = p2)
+  )
 }

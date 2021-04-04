@@ -1,118 +1,142 @@
-FACTOR_LOC <- list(varName = "location", graphName = "site",
-                   levels = c("CAG", "BAT", "BIC"))
-
-FACTOR_TRT <- list(varName = "condition", graphName = "condition",
-                   levels = c("C", "E"))
-
-..category_order <- c("Uu", "uU", "Dd", "dD", "UD", "DU")
-
-..getTestID_frCoeffName <- function(coeffName){
-  varName_Loc <- FACTOR_LOC[['varName']]
-  varName_Trt <- FACTOR_TRT[['varName']]
+..getShortenedCoeffname <- function(dseq, coeffName){
+  factors <- all.vars(dseq@design)
+  name_factor1 <- factors[[1]]
+  name_factor2 <- factors[[2]]
   
   # Case 1 : coeffName is "locationBAT.conditionE"
   #          return "BAT.E"
-  if(grepl(varName_Loc, coeffName) && grepl(varName_Trt, coeffName)){
-    testId <- gsub(varName_Loc, "", coeffName) %>% 
-      gsub(varName_Trt, "", .)
-    return(testId)
+  if(grepl(name_factor1, coeffName) && grepl(name_factor2, coeffName)){
+    shortCoeffName <- gsub(name_factor1, "", coeffName) %>% 
+              gsub(name_factor2, "", .)
+    return(shortCoeffName)
   }
   
   # Case 2 : coeffName is "location_BAT_vs_CAG" or "condition_E_vs_C"
   #          return "BAT" or "E"
-  if(grepl(varName_Loc, coeffName) || grepl(varName_Trt, coeffName)){
-    testId <- strsplit(coeffName, "_")[[1]][[2]]
-    return(testId)
+  if(grepl(name_factor1, coeffName) || grepl(name_factor2, coeffName)){
+    shortCoeffName <- strsplit(coeffName, "_")[[1]][[2]]
+    return(shortCoeffName)
   }
   return(coeffName)
 }
 
-
-..getCoeffName_frTestID <- function(testID){
-  # input         output
-  # "BAT"       = "location_BAT_vs_CAG"
-  # "BAT.E"     = "locationBAT.conditionE"
-  # "E"         = "condition_E_vs_C")
-  varName_Loc <- FACTOR_LOC[['varName']]
-  varName_Trt <- FACTOR_TRT[['varName']]
-  refLoc <- FACTOR_LOC[['levels']][[1]]
-  refTrt <- FACTOR_TRT[['levels']][[1]]
+..getFullCoeffName <- function(dseq, shortCoeffName){
+  factors <- all.vars(dseq@design)
   
-  intEff <- strsplit(testID, "\\.")[[1]]
-  if(length(intEff) == 1){
-    if(testID %in% FACTOR_LOC[['levels']]){
-      coeffName <- paste0(c(varName_Loc,testID,"vs",refLoc), collapse = "_")
-    }else if(testID %in% FACTOR_TRT[['levels']]){
-      coeffName <- paste0(c(varName_Trt,testID,"vs",refTrt), collapse = "_")
+  name_factor1 <- factors[[1]]
+  name_factor2 <- factors[[2]]
+  levels_1 <- levels(dseq@colData[[name_factor1]])
+  levels_2 <- levels(dseq@colData[[name_factor2]])
+  
+  if(!grepl("\\.", shortCoeffName)){
+    # Case 1 : Not an interaction effect
+    # shortCoeffName      coeffName
+    # "BAT"               "location_BAT_vs_CAG"
+    # "E"                 "condition_E_vs_C"
+    if(shortCoeffName %in% levels_1){
+      coeffName <- paste0(c(name_factor1,shortCoeffName,"vs",levels_1[[1]]), collapse = "_")
+    }else if(shortCoeffName %in% levels_2){
+      coeffName <- paste0(c(name_factor2,shortCoeffName,"vs",levels_2[[1]]), collapse = "_")
     }
   }else{
-    coeffName <- paste0(varName_Loc, intEff[[1]], ".", varName_Trt, intEff[[2]])
+    # Case 2 : Is an interaction effect
+    # shortCoeffName        coeffName
+    # "BAT.E"               "locationBAT.conditionE"
+    interactionEff <- strsplit(shortCoeffName, "\\.")[[1]]
+    coeffName <- paste0(name_factor1, interactionEff[[1]], ".", name_factor2, interactionEff[[2]])
   }
   return(coeffName)
 }
 
-..getInteractionGroups <- function(testID){
-  testID_terms <- ..extractTestID_terms(testID)
-  intEff <- sapply(testID_terms, function(x) strsplit(x, "\\.")[[1]][[1]])
-  if(length(intEff) == 1){
-    refLoc <- FACTOR_LOC[['levels']][[1]]
-    samples <- c(refLoc, intEff[[1]])
+..getLevelsFromContrast <- function(dseq, contrast){
+  # Given a contrast with interaction terms, this function returns the relevant levels in factor 1 (See example cases below)
+  
+  coeffs <- ..extractCoeffs_fromContrast(contrast)
+  interactionEff <- sapply(coeffs, function(x) strsplit(x, "\\.")[[1]][[1]]) # "BAT.E" is split to "BAT"
+  
+  if(length(interactionEff) == 1){
+    # Case 1 : one interaction effect
+    # input contrast        :   "BAT.E"  
+    # output levelNames     :   c("CAG", "BAT")
+    name_factor1 <- all.vars(dseq@design)[[1]]
+    refLevel_factor1 <- levels(dseq@colData[[name_factor1]])[[1]]
+    levelNames <- c(refLevel_factor1, interactionEff[[1]])
   }else{
-    samples <- c(intEff[[1]], intEff[[2]])
+    # Case 2 : two interaction effects
+    # input contrast        :   "BAT.E - BIC.E" 
+    # output levelNames     :   c("BAT", "BIC")
+    levelNames <- c(interactionEff[[1]], interactionEff[[2]])
   }
-  return(samples)
+  return(levelNames)
 }
 
-..getInteractionCoeffs <- function(testID){
-  # input : BAT.E
-  # [[1]]
-  # [1] "condition_E_vs_C"
+..getInteractionCoeffs <- function(dseq, contrast){
+  # Returns the left-handside (lhs) and right-handside (rhs) coefficents of a contrast
+  # Useful for graphing interaction plots
+  # Example input : BAT.E
+  # Output:
+  #     $lhs
+  #     [1] "condition_E_vs_C"
   # 
-  # [[2]]
-  # [1] "condition_E_vs_C"       "locationBAT.conditionE"
-  testID_terms <- ..extractTestID_terms(testID)
+  #     $rhs
+  #     [1] "condition_E_vs_C"       "locationBAT.conditionE"
+  coeffs <- ..extractCoeffs_fromContrast(contrast) 
   
-  if(length(testID_terms) == 1){
-    coeffs <- sapply(c(testID, strsplit(testID, "\\.")[[1]][[2]]), ..getCoeffName_frTestID, USE.NAMES = FALSE)
+  if(length(coeffs) == 1){
+    coeffs <- sapply(c(contrast, strsplit(contrast, "\\.")[[1]][[2]]), function(x){..getFullCoeffName(dseq, x)}, USE.NAMES = FALSE)
     coeffs_lhs_rhs <- list(lhs = coeffs[2], 
                            rhs = c(coeffs[2], coeffs[1]))
   }else{
-    coeffs_lhs_rhs <- lapply(testID_terms, function(x){
-      sapply(c(strsplit(x, "\\.")[[1]][[2]], x), ..getCoeffName_frTestID, USE.NAMES = FALSE)
+    coeffs_lhs_rhs <- lapply(coeffs, function(x){
+      sapply(c(strsplit(x, "\\.")[[1]][[2]], x), function(x){..getFullCoeffName(dseq, x)}, USE.NAMES = FALSE)
     })
     names(coeffs_lhs_rhs) <- c("lhs", "rhs")
   }
-  return(invisible(coeffs_lhs_rhs))
+  return(coeffs_lhs_rhs)
 }
 
-..getSamplesOfInterest <- function(samplenames, testID){
-  searchPattern <- paste0(..getSampleGrpsOfInterest(testID), collapse = "|")
-  samplenames <- samplenames[grepl(searchPattern, samplenames)]
-  return(samplenames)
-}
-
-..getSampleGrpsOfInterest <- function(testID){
-  refLoc <- FACTOR_LOC[['levels']][[1]]
-  refTrt <- FACTOR_TRT[['levels']][[1]]
-  testID_terms <- ..extractTestID_terms(testID)
+..getSamplesRelatedToContrast <- function(dseq, contrast){
+  # Returns the names of the samples that are involved in the contrast
+  # Useful for plotting
+  #
+  # Example 1
+  # input contrast : "BAT"
+  # output samples :  BAT_C_*, CAG_C_*
+  #
+  # Example 2 
+  # input contrast : "BAT.E"
+  # output samples :  BAT_C_*, BAT_E_*, CAG_C_*, CAG_E_*
+  #
+  # Example 3
+  # input contrast : "BAT.E - BIC.E"
+  # output samples :  BAT_C_*, BAT_E_*, BIC_C_*, BIC_E_*
+  
+  factors <- all.vars(dseq@design)
+  
+  levels_1 <- levels(dseq@colData[[factors[[1]]]])
+  levels_2 <- levels(dseq@colData[[factors[[2]]]])
+  refLevel_factor1 <- levels_1[[1]]
+  refLevel_factor2 <- levels_2[[1]]
+  
+  coeffs <- ..extractCoeffs_fromContrast(contrast)
   samples <- c()
-  for(t in testID_terms){
-    if(t %in% FACTOR_LOC[['levels']]){
+  for(coeff in coeffs){
+    if(coeff %in% levels_1){
       # Case 1 : "BAT"
       # Output : c("CAG_C","BAT_C")
-      s <- c(refLoc, t)
-      s <- paste0(s, "_", refTrt)
-    }else if(t %in% FACTOR_TRT[['levels']]){
+      s <- c(refLevel_factor1, coeff)
+      s <- paste0(s, "_", refLevel_factor2)
+    }else if(coeff %in% levels_2){
       # Case 2 : "E"
       # Output : c("CAG_C","CAG_E")
-      s <- c(refTrt, t)
-      s <- paste0(refLoc, "_", s)
+      s <- c(refLevel_factor2, coeff)
+      s <- paste0(refLevel_factor1, "_", s)
     }else{
       # Case 3 : "BAT.E"
       # Output : c("CAG_C","CAG_E", "BAT_C", "BAT_E")
-      intEff <- strsplit(t, "\\.")[[1]]
-      s <- rep(c(refLoc, intEff[[1]]), each = 2)
-      s <- paste0(s, "_", rep(c(refTrt, intEff[[2]]), 2))
+      interactionEff <- strsplit(coeff, "\\.")[[1]]
+      s <- rep(c(refLevel_factor1, interactionEff[[1]]), each = 2)
+      s <- paste0(s, "_", rep(c(refLevel_factor2, interactionEff[[2]]), 2))
     }
     if(length(samples) == 0){
       samples <- s
@@ -124,20 +148,14 @@ FACTOR_TRT <- list(varName = "condition", graphName = "condition",
       samples <- c(setdiff(samples, s), setdiff(s, samples))
     }
   }
-  return(samples)
+  samplenames <- dseq@colData[[1]]
+  samplenames <- samplenames[grepl(paste0(samples, collapse = "|"), samplenames)]
+  return(samplenames)
 }
 
-..getSubgroupLevels <- function(){
-  levelsLoc <- FACTOR_LOC[['levels']]
-  levelsTrt <- FACTOR_TRT[['levels']]
-  l <- paste0(rep(levelsLoc, each=length(levelsTrt)), "_",
-              rep(levelsTrt, length(levelsLoc)))
-  return(l)
-}
-
-..extractTestID_terms <- function(testID){
-  testID_terms <- gsub(" ", "", testID) %>%
+..extractCoeffs_fromContrast <- function(contrast){
+  coeffs <- gsub(" ", "", contrast) %>%
     strsplit("\\+|\\-", perl = TRUE)
-  return(testID_terms[[1]])
+  return(coeffs[[1]])
 }
 
