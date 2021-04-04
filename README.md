@@ -5,9 +5,8 @@ This repository contains scripts to reproduce the results presented in *Shrestha
 The raw RNA-seq reads in fastq format can be downloaded from DDBJ Sequence Read Archive under the accession number DRA010977. Here is a direct [link](https://ddbj.nig.ac.jp/DRASearch/submission?acc=DRA010977). 
 There are 29 RNA-seq samples: DRX242230 -- DRX242258. Each sample is from one of 3 sites: Bataan, Cagayan, Bicol; and one of 2 conditions: control or heat-stressed. Sample information can be obtained by clicking the link to each experiment.
 
-For annotation, download the Swiss-Prot database and the fruit fly proteome.
 
-# Assembly-mapping-quantification and annotation pipeline
+# Assembly-mapping-quantification
 
 ## Software requirement
 This pipeline requires requires Conda and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
@@ -35,12 +34,39 @@ snakemake --configfile config.yaml --use-conda --cores all
 ```
 
 ## Output
-The main output is arranged into 3 folders: *trinity_out_dir* which contains the assembly, 
+The main output is arranged into 3 folders: *trinity_out_dir* which contains the assembly *Trinity.fasta*, 
 *trinity_abundance* which contains the counts required for subsequent differential expression analysis, 
 and *dammit_out* which contains the output of annotation.
 
-The transciptome assembly we obtained can be downloaded here.
-The Bowtie2-RSEM quantification results we obtained can be downloaded here.
+The transciptome assembly we obtained can be downloaded [here](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing).
+The Bowtie2-RSEM quantification results we obtained can be downloaded [here](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing).
+
+
+# Assembly annotation
+
+## Data
+For annotation, download the Swiss-Prot database and the fruit fly proteome UP000000803 .
+
+## Software requirement
+We used Dammit (v 1.2), which can be installed using bioconda:
+```
+$ mamba create -c conda-forge -c bioconda -n dammit dammit=1.2
+```
+Next activate the environment:
+```
+$conda activate dammit
+```
+
+## Running Dammit
+
+With the Swiss-Prot dataset and fruit fly proteome, launch Dammit:
+```
+dammit databases --install --quick --busco-group metazoa 
+dammit annotate trinity_out/Trinity.fasta --quick --user-databases Swiss-Prot.fa fruifly.fa -e 1e-10 --output-dir dammit_out
+```
+
+## Ouput
+The output contains many files, which we have summarized as a data-frame required by downstream analysis [here](https://drive.google.com/file/d/1k5S_lzy4_NgnF7sXa5dPKTInMbE4fz9L/view?usp=sharing).
 
 
 # Differential expression analysis
@@ -55,7 +81,7 @@ Place the following files in a `data` folder:
 
 1. **Folder of RSEM Counts**
 	
-    Current folder: `counts_per_sample` [💾](https://drive.google.com/file/d/1EuCITWPChEdc-SPXOluMmZNqYx81abG7/view?usp=sharing) 
+    Current folder: `counts_per_sample` [💾](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing) 
 
 	Generated from RSEM after TRINITY assembly. Contains ".genes.results" file for each sample.  
 	
