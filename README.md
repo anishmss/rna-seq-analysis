@@ -1,20 +1,57 @@
 # Introduction
 This repository contains scripts to reproduce the results presented in *Shrestha et al.: Comparative transcriptome profiling of heat stress response of the mangrove crab Scylla serrata across different sites.*
 
-The raw RNA-seq reads in fastq format can be downloaded from DDBJ Sequence Read Archive under the accession number DRA010977. Here is a direct [link](https://ddbj.nig.ac.jp/DRASearch/submission?acc=DRA010977). There are 29 RNA-seq samples: DRX242230 -- DRX242258. Each sample is from one of 3 sites: Bataan, Cagayan, Bicol; and one of 2 conditions: control or heat-stressed. Sample information can be obtained by clicking the link to each experiment.
+# Data
+The raw RNA-seq reads in fastq format can be downloaded from DDBJ Sequence Read Archive under the accession number DRA010977. Here is a direct [link](https://ddbj.nig.ac.jp/DRASearch/submission?acc=DRA010977). 
+There are 29 RNA-seq samples: DRX242230 -- DRX242258. Each sample is from one of 3 sites: Bataan, Cagayan, Bicol; and one of 2 conditions: control or heat-stressed. Sample information can be obtained by clicking the link to each experiment.
 
-# Assembly, mapping, quantification
-The pipeline for assembly, mapping, and quantification is provided as a Snakemake pipeline. Fill out the **config.yaml** in the repository and fill out the entries corresponding to the file paths where the RNA-seq samples have been downloaded.
-Then run the following:
+For annotation, download the Swiss-Prot database and the fruit fly proteome.
+
+# Assembly-mapping-quantification and annotation pipeline
+
+## Software requirement
+This pipeline requires requires Conda and [Snakemake](https://snakemake.readthedocs.io/en/stable/).
+Other dependencies are handled by Snakemake automatically. 
+Snakemake recommends installation via Conda:
+```
+$ conda install -c conda-forge mamba
+$ mamba create -c conda-forge -c bioconda -n snakemake snakemake
+```
+This creates an isolated enviroment containing the latest Snakemake. To activate it:
+```
+$ conda activate snakemake
+```
+To test snakemake installation 
+```
+$ snakemake --help
+```
+
+## Running the pipeline
+Download or clone this repository. In the *config.yaml* file, set (1) the absolute paths to the RNA-seq reads, 
+(2) an absolute path to the directory where you want the outputs to be saved, and (3) the absolute paths to the databases for annotation.
+Then at the top-level directory, run the following :
+```
+snakemake --configfile config.yaml --use-conda --cores all 
+```
+
+## Output
+The main output is arranged into 3 folders: *trinity_out_dir* which contains the assembly, 
+*trinity_abundance* which contains the counts required for subsequent differential expression analysis, 
+and *dammit_out* which contains the output of annotation.
 
 The transciptome assembly we obtained can be downloaded here.
-The Bowtie2-RSEM quantification results can be obtained here.
+The Bowtie2-RSEM quantification results we obtained can be downloaded here.
+
 
 # Differential expression analysis
-Differential expression analysis and the quality-control steps prior to it can be done using the R Markdown noteboo Main.Rmd.
+Differential expression analysis can be performed using the R Markdown notebook Main.Rmd.
 
-### Setup
-Place all Input Files in `data` folder:
+## Software requirement
+The following steps were executed on RStudio (v.1.2.5042) and R (v. 4.0.3). 
+RStudio should prompt you for all other library dependecies.
+
+## Data
+Place the following files in a `data` folder:
 
 1. **Folder of RSEM Counts**
 	
