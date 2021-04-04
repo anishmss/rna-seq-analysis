@@ -1,5 +1,7 @@
 # Introduction
-This repository contains scripts to reproduce the results presented in *Shrestha et al.: Comparative transcriptome profiling of heat stress response of the mangrove crab Scylla serrata across different sites.*
+This repository contains scripts to reproduce the results presented in 
+*Shrestha et al.: Comparative transcriptome profiling of heat stress response of the mangrove crab Scylla serrata
+across sites of varying climate profiles*
 
 # Data
 The raw RNA-seq reads in fastq format can be downloaded from DDBJ Sequence Read Archive under the accession number DRA010977. Here is a direct [link](https://ddbj.nig.ac.jp/DRASearch/submission?acc=DRA010977). 
@@ -34,12 +36,11 @@ snakemake --configfile config.yaml --use-conda --cores all
 ```
 
 ## Output
-The main output is arranged into 3 folders: *trinity_out_dir* which contains the assembly *Trinity.fasta*, 
-*trinity_abundance* which contains the counts required for subsequent differential expression analysis, 
-and *dammit_out* which contains the output of annotation.
+The main output is arranged into several folders, of which: *trinity_out_dir* which contains the assembly *Trinity.fasta*, 
+*trinity_abundance* which contains the counts required for subsequent differential expression analysis.
 
 The transciptome assembly we obtained can be downloaded [here](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing).
-The Bowtie2-RSEM quantification results we obtained can be downloaded [here](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing).
+The quantification results we obtained can be downloaded [here](https://drive.google.com/file/d/1rw2rbbGzz2etlSLihpLCq1hU29PJBXGX/view?usp=sharing).
 
 
 # Assembly annotation
